@@ -1,0 +1,169 @@
+.hero-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: white;
+  padding: 0 0.5rem;
+  margin-top: -5rem;
+}
+
+.hero-title {
+  font-size: 2.75rem;
+  font-weight: bold;
+  line-height: 1.2;
+  color: #0A2647;
+  margin-bottom: 0.75rem;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: #4B5563;
+  margin-bottom: 2rem;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto 2rem;
+}
+
+.search-bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 30px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  background-color: white;
+}
+
+.category-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 0rem;
+}
+
+.category-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  color: #4B5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.category-button:hover {
+  background-color: #3B82F6;
+  color: white;
+}
+
+/* Mobile devices (up to 480px) */
+@media screen and (max-width: 480px) {
+  .hero-container {
+    margin-top: -2rem;
+    padding: 0 1rem;
+  }
+
+  .hero-title {
+    font-size: 1.75rem;
+    padding: 0 0.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    padding: 0 0.5rem;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    padding: 0.5rem;
+  }
+
+  .category-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Small tablets (481px to 768px) */
+@media screen and (min-width: 481px) and (max-width: 768px) {
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.125rem;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    padding: 0.75rem;
+  }
+}
+
+/* Large tablets and laptops (769px to 1024px) */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+  .hero-title {
+    font-size: 2.25rem;
+  }
+
+  .search-container {
+    max-width: 42rem;
+  }
+}
+
+/* Large screens (1025px to 1200px) */
+@media screen and (min-width: 1025px) and (max-width: 1200px) {
+  .search-container {
+    max-width: 45rem;
+  }
+}
+
+/* Extra large screens (above 1200px) */
+@media screen and (min-width: 1201px) {
+  .hero-container {
+    padding: 0 2rem;
+  }
+
+  .search-container {
+    max-width: 48rem;
+  }
+}
+
+/* Handle shorter height screens */
+@media screen and (max-height: 700px) {
+  .hero-container {
+    margin-top: -1rem;
+    min-height: 95vh;
+  }
+
+  .hero-title {
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-subtitle {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* Landscape mode for mobile devices */
+@media screen and (max-width: 768px) and (orientation: landscape) {
+  .hero-container {
+    margin-top: 0;
+    padding: 2rem 1rem;
+    min-height: auto;
+  }
+
+  .search-bar {
+    flex-direction: row;
+  }
+} 
