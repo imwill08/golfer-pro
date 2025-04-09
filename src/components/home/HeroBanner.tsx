@@ -6,14 +6,14 @@ import './HeroBanner.css';
 
 const HeroBanner = () => {
   return (
-    <div className="hero-container">
+    <div className="hero-container mb-4"> 
       <div className="max-w-4xl mx-auto text-center">
-        <h1 className="hero-title">
+        <h1 className="hero-title mb-8">
           Find the Best Golf Instructors Near You
         </h1>
-        <p className="hero-subtitle">
+        {/* <p className="hero-subtitle">
           Search and connect with expert golf instructors for personalized coaching
-        </p>
+        </p> */}
       </div>
 
       <div className="search-container">
@@ -52,35 +52,35 @@ const HeroBanner = () => {
       </div>
 
       <div className="category-buttons">
-        <button className="category-button group">
+        <button className="category-button">
           <img 
             src="/icons/person-icon.png" 
             alt="" 
-            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+            className="w-4 h-4" 
           />
           In-Person Lessons
         </button>
-        <button className="category-button group">
+        <button className="category-button">
           <img 
             src="/icons/online-icon.png" 
             alt="" 
-            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+            className="w-4 h-4" 
           />
           Online Lessons
         </button>
-        <button className="category-button group">
+        <button className="category-button">
           <img 
             src="/icons/academy-icon.png" 
             alt="" 
-            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+            className="w-4 h-4" 
           />
           Gold Academy
         </button>
-        <button className="category-button group">
+        <button className="category-button">
           <img 
             src="/icons/facility-icon.png" 
             alt="" 
-            className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" 
+            className="w-4 h-4" 
           />
           Golf Practice Facilities
         </button>

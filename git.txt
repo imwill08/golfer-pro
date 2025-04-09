@@ -1,0 +1,14 @@
+git add .
+git commit -m "xyz"
+git push
+
+
+for pull
+ git pull 
+
+
+ 1. repo create
+ 2. copy repo code
+ 3. clone repo going into cmd
+ 4. git clone "repo link paste"
+ 5 paste the code from the local folder
