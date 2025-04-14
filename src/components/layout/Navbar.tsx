@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Search, MapPin, ChevronDown } from 'lucide-react';
@@ -17,7 +16,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-6">
             <Link to="/" className="text-gray-600 hover:text-golf-blue font-medium">Home</Link>
             <Link to="/instructors" className="text-gray-600 hover:text-golf-blue font-medium">Find Instructors</Link>
-            <Link to="/admin" className="text-gray-600 hover:text-golf-blue font-medium">Admin Login</Link>
+            <Link to="/admin" className="text-black hover:text-golf-blue font-bold">Admin Login</Link>
           </div>
         </div>
       </div>

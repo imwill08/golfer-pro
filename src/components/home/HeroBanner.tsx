@@ -1,13 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MapPin, Search, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import './HeroBanner.css';
 
+const categories = [
+  { id: 'in-person', label: 'In-Person' },
+  { id: 'online', label: 'Online' },
+  { id: 'advance-training', label: 'Advance training' },
+  { id: 'strategy-coaching', label: 'Strategy Coaching' },
+  { id: 'junior-golf', label: 'Junior Golf' }
+];
+
 const HeroBanner = () => {
+  const [showRadiusPopup, setShowRadiusPopup] = useState(false);
+  const [showCategoriesPopup, setShowCategoriesPopup] = useState(false);
+  const [radius, setRadius] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  
+  const radiusButtonRef = useRef<HTMLButtonElement>(null);
+  const radiusPopupRef = useRef<HTMLDivElement>(null);
+  const categoriesButtonRef = useRef<HTMLButtonElement>(null);
+  const categoriesPopupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      if (!radiusButtonRef.current?.contains(target) && 
+          !radiusPopupRef.current?.contains(target)) {
+        setShowRadiusPopup(false);
+      }
+
+      if (!categoriesButtonRef.current?.contains(target) && 
+          !categoriesPopupRef.current?.contains(target)) {
+        setShowCategoriesPopup(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setShowCategoriesPopup(false);
+  };
+
+  const toggleRadiusPopup = () => {
+    setShowCategoriesPopup(false);
+    setShowRadiusPopup(!showRadiusPopup);
+  };
+
+  const toggleCategoriesPopup = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowRadiusPopup(false);
+    setShowCategoriesPopup(!showCategoriesPopup);
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    setRadius(e.target.value);
+  };
+
   return (
-    <div className="hero-container mb-4"> 
-      <div className="max-w-4xl mx-auto text-center">
+    <div className="hero-container mb-4 "> 
+      <div className="max-w-4xl mx-auto text-left">
         <h1 className="hero-title mb-8">
           Find the Best Golf Instructors Near You
         </h1>
@@ -16,42 +74,91 @@ const HeroBanner = () => {
         </p> */}
       </div>
 
-      <div className="search-container">
+      <div className="search-container mb-4">
         <div className="search-bar">
-          <div className="flex items-center gap-2 flex-1 pl-4">
-            <MapPin className="w-6 h-6 text-gray-400" />
+          {/* Zip Code Section */}
+          <div className="search-section zip-section">
+            <MapPin className="w-5 h-5" />
             <Input 
               type="text" 
               placeholder="Zip Code" 
-              className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-xl placeholder:text-gray-400"
+              className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
               aria-label="Zip Code"
             />
           </div>
           
-          <div className="w-px h-8 self-center bg-gray-200"></div>
+          <div className="search-divider" />
           
-          <div className="relative min-w-[220px]">
-            <select
-              className="w-full h-full appearance-none border-0 focus:ring-0 focus:outline-none text-gray-700 px-4 text-xl"
-              aria-label="Category"
-              defaultValue=""
+          {/* Categories Section */}
+          <div className="search-section">
+            <button 
+              ref={categoriesButtonRef}
+              className="section-button"
+              onClick={toggleCategoriesPopup}
             >
-              <option value="" disabled>Categories</option>
-              <option value="in-person">In-Person Lessons</option>
-              <option value="online">Online Lessons</option>
-              <option value="academy">Golf Academy</option>
-              <option value="practice">Golf Practice Facilities</option>
-            </select>
-            <ChevronDown className="w-6 h-6 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <span>
+                {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : 'Categories'}
+              </span>
+              <ChevronDown className={`w-5 h-5 transform transition-transform ${showCategoriesPopup ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showCategoriesPopup && (
+              <div ref={categoriesPopupRef} className="dropdown-popup categories-popup">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    className={`dropdown-item ${selectedCategory === category.id ? 'selected' : ''}`}
+                    onClick={() => handleCategorySelect(category.id)}
+                  >
+                    {category.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="search-divider" />
+          
+          {/* Radius Section */}
+          <div className="search-section">
+            <button 
+              ref={radiusButtonRef}
+              className="section-button"
+              onClick={toggleRadiusPopup}
+            >
+              <span className={radius ? 'selected-value' : ''}>
+                {radius ? `${radius}km` : 'Radius'}
+              </span>
+              <ChevronDown className={`w-5 h-5 transform transition-transform ${showRadiusPopup ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showRadiusPopup && (
+              <div 
+                ref={radiusPopupRef} 
+                className="dropdown-popup radius-popup"
+              >
+                <div className="radius-slider-container">
+                  <input
+                    type="range"
+                    min="1"
+                    max="100"
+                    value={radius || '5'}
+                    onChange={handleSliderChange}
+                    className="radius-slider"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           
-          <Button size="lg" className="rounded-[35px] px-10 bg-blue-600 hover:bg-blue-700">
-            <Search className="w-6 h-6" />
-          </Button>
+          {/* Search Button */}
+          <button className="search-button">
+            <Search className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      <div className="category-buttons">
+      <div className="category-buttons mb-4">
         <button className="category-button">
           <img 
             src="/icons/person-icon.png" 

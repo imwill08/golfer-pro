@@ -1,0 +1,107 @@
+.cta-section {
+  position: relative;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  background-image: url('/images/golf-cta-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.cta-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 100%);
+  z-index: 1;
+}
+
+.cta-content {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 24px;
+  z-index: 2;
+}
+
+.cta-text-container {
+  max-width: 800px;
+  color: white;
+}
+
+.cta-title {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.cta-subtitle {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  margin-bottom: 32px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cta-button {
+  background-color: #0077CC !important;
+  color: white !important;
+  font-size: 1.125rem !important;
+  padding: 12px 32px !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.cta-button:hover {
+  background-color: #0066B3 !important;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .cta-section {
+    min-height: 400px;
+  }
+
+  .cta-title {
+    font-size: 2.25rem;
+  }
+
+  .cta-subtitle {
+    font-size: 1rem;
+  }
+
+  .cta-button {
+    padding: 10px 24px !important;
+    font-size: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .cta-section {
+    min-height: 350px;
+  }
+
+  .cta-title {
+    font-size: 1.75rem;
+  }
+
+  .cta-subtitle {
+    font-size: 1rem;
+  }
+
+  .cta-content {
+    padding: 60px 20px;
+  }
+
+  .cta-title br,
+  .cta-subtitle br {
+    display: none;
+  }
+} 
