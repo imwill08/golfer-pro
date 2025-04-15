@@ -1,4 +1,3 @@
-
 import { LucideIcon } from 'lucide-react';
 
 export interface Highlight {
@@ -123,3 +122,18 @@ export interface InstructorFormValues {
   profilePhoto?: File | null;
   additionalPhotos?: File[] | null;
 }
+
+export interface Instructor {
+  id: string;
+  name: string;
+  location: string;
+  image: string;
+  experience: number;
+  specialty: string;
+  lessonType: string;
+  rate: string;
+  rating?: number;
+  reviews?: number;
+}
+
+export type ProcessedInstructor = Instructor;
