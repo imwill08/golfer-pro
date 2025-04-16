@@ -65,4 +65,46 @@
   max-width: 50rem;
   margin: 0 auto 3.5rem;
   text-align: center;
+}
+
+/* Mobile Responsive Styles */
+@media screen and (max-width: 640px) {
+  .footer {
+    padding: 3rem 0 1rem;
+  }
+
+  .footer-description {
+    font-size: 1rem;
+    padding: 0 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .footer-heading {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .footer-link {
+    font-size: 1rem;
+  }
+
+  .footer-copyright {
+    font-size: 1rem;
+  }
+
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .flex {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
 } 

@@ -14,11 +14,11 @@ import { Slider } from '@/components/ui/slider';
 import { Link } from 'react-router-dom';
 
 const categories = [
-  { id: 'all', label: 'All Categories' },
-  { id: 'beginner', label: 'Beginner Lessons' },
-  { id: 'intermediate', label: 'Intermediate Lessons' },
-  { id: 'advanced', label: 'Advanced Lessons' },
-  { id: 'pro', label: 'Pro Training' }
+  { id: 'in-person', label: 'In-Person' },
+  { id: 'online', label: 'Online' },
+  { id: 'advance-training', label: 'Advance training' },
+  { id: 'strategy-coaching', label: 'Strategy Coaching' },
+  { id: 'junior-golf', label: 'Junior Golf' }
 ];
 
 const InstructorsPage = () => {
@@ -123,7 +123,7 @@ const InstructorsPage = () => {
   const renderInstructorCard = (instructor: ProcessedInstructor) => {
     if (viewMode === 'list') {
       return (
-        <div key={instructor.id} className="bg-white rounded-xl p-6 flex gap-8 group hover:shadow-md transition-shadow">
+        <div key={instructor.id} className="p-6 flex gap-8">
           {/* Profile Image */}
           <div className="w-48 h-48 rounded-lg overflow-hidden flex-shrink-0">
             <img 
@@ -137,7 +137,7 @@ const InstructorsPage = () => {
           <div className="flex-grow">
             {/* Header */}
             <div className="mb-4">
-              <h3 className="text-2xl font-bold mb-2">{instructor.name}</h3>
+              <h3 className="text-2xl font-bold mb-2 text-gray-900">{instructor.name}</h3>
               <div className="flex items-center text-gray-600">
                 <MapPin className="w-5 h-5 mr-2" />
                 {instructor.location}
@@ -174,11 +174,11 @@ const InstructorsPage = () => {
             <div className="flex items-center justify-between mt-auto">
               <div>
                 <span className="text-gray-600 mr-2">Price:</span>
-                <span className="text-2xl font-bold">${instructor.rate} per hour</span>
+                <span className="text-2xl font-bold text-gray-900">${instructor.rate} per hour</span>
               </div>
               <Link 
                 to={`/instructors/${instructor.id}`}
-                className="px-6 py-2 bg-white border-2 border-gray-200 rounded-full text-gray-700 font-medium hover:border-blue-600 hover:text-blue-600 transition-colors"
+                className="px-4 py-2 bg-white text-gray-900 text-sm rounded-full font-medium shadow-[0_2px_10px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-shadow"
               >
                 View Profile
               </Link>
@@ -188,7 +188,6 @@ const InstructorsPage = () => {
       );
     }
 
-    // Keep existing grid view code
     return (
       <div key={instructor.id} className="overflow-hidden group">
         {/* Image Container */}
@@ -206,31 +205,31 @@ const InstructorsPage = () => {
         </div>
 
         {/* Details Container */}
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {/* Experience */}
           <div className="flex items-center text-gray-600">
-            <span className="w-6 text-lg">⌚</span>
-            <span className="ml-2">{instructor.experience} Years Coaching</span>
+            <span className="w-5 h-5 flex items-center justify-center">⌚</span>
+            <span className="ml-2 text-[15px]">{instructor.experience} Years Coaching</span>
           </div>
 
           {/* Specialty */}
           <div className="flex items-center text-gray-600">
-            <span className="w-6 text-lg">🎯</span>
-            <span className="ml-2">{instructor.specialty}</span>
+            <span className="w-5 h-5 flex items-center justify-center">🎯</span>
+            <span className="ml-2 text-[15px]">Swing Analysis Specialist</span>
           </div>
 
           {/* Lesson Type */}
           <div className="flex items-center text-gray-600">
-            <span className="w-6 text-lg">📍</span>
-            <span className="ml-2">{instructor.lessonType}</span>
+            <span className="w-5 h-5 flex items-center justify-center">📍</span>
+            <span className="ml-2 text-[15px]">In-Person / Online</span>
           </div>
 
           {/* Rate and View Profile */}
           <div className="pt-3 flex items-center justify-between">
-            <div className="text-xl font-semibold">{instructor.rate}/Hr</div>
+            <div className="text-xl font-semibold">${instructor.rate}/Hr</div>
             <Link 
               to={`/instructors/${instructor.id}`}
-              className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              className="px-4 py-2 bg-white text-gray-900 text-sm rounded-full font-medium shadow-[0_2px_10px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.15)] transition-shadow"
             >
               View Profile
             </Link>
@@ -247,8 +246,8 @@ const InstructorsPage = () => {
       <main className="py-0">
         {/* Search Header Section */}
         <div className="bg-white">
-        <div className="container mx-1 px-6 mb-4">
-            <div className="flex justify-center -mt-6 relative z-4">
+          <div className="container mx-1 px-6 mb-4">
+            <div className="flex justify-center mt-0 relative z-4">
               <div className="w-[650px]">
                 <div className="search-bar flex items-center bg-white rounded-full border shadow-sm">
                   {/* Zip Code Section */}
@@ -506,7 +505,7 @@ const InstructorsPage = () => {
                 
                 {/* Apply Button */}
                 <div className="mt-8">
-                  <button className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-full font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                  <button className="w-full bg-blue-600 text-white py-2.5 px-2 rounded-full font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     Apply
                   </button>
                 </div>
@@ -516,30 +515,30 @@ const InstructorsPage = () => {
             {/* Instructors Grid Section */}
             <div className="flex-1">
               {/* Header with Title and View Toggle */}
-              <div className="flex items-center justify-between mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Golf Instructors Available Here</h1>
-                <div className="bg-blue-100 p-1 rounded-lg flex">
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200">
+                <h1 className="text-[40px] font-small text-gray-700">Golf Instructors Available Here</h1>
+                <div className="bg-[#EEF7FF] p-1 rounded-lg flex gap-1">
                   <button 
                     className={`p-2 rounded-md transition-all duration-200 ${
                       viewMode === 'grid' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-white text-[#0066FF] shadow-sm' 
+                        : 'text-gray-500'
                     }`}
                     onClick={() => setViewMode('grid')}
                     aria-label="Grid View"
                   >
-                    <BsGrid className="w-5 h-5" />
+                    <BsGrid className="w-4 h-4" />
                   </button>
                   <button 
                     className={`p-2 rounded-md transition-all duration-200 ${
                       viewMode === 'list' 
-                        ? 'bg-white text-blue-600 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700'
+                        ? 'bg-white text-[#0066FF] shadow-sm' 
+                        : 'text-gray-500'
                     }`}
                     onClick={() => setViewMode('list')}
                     aria-label="List View"
                   >
-                    <BsList className="w-5 h-5" />
+                    <BsList className="w-4 h-4" />
                   </button>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Navbar from '@/components/layout/Navbar';
@@ -42,6 +42,46 @@ const InstructorProfilePage = () => {
   const [instructor, setInstructor] = useState<InstructorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('about');
+
+  // Add refs for scroll functionality
+  const aboutRef = useRef<HTMLDivElement>(null);
+  const photosRef = useRef<HTMLDivElement>(null);
+  const servicesRef = useRef<HTMLDivElement>(null);
+  const faqsRef = useRef<HTMLDivElement>(null);
+
+  const scrollToSection = (ref: React.RefObject<HTMLDivElement>, tab: string) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth' });
+    setActiveTab(tab);
+  };
+
+  // Add scroll spy effect
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveTab(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    const sections = [aboutRef, photosRef, servicesRef, faqsRef];
+    sections.forEach((section) => {
+      if (section.current) {
+        observer.observe(section.current);
+      }
+    });
+
+    return () => {
+      sections.forEach((section) => {
+        if (section.current) {
+          observer.unobserve(section.current);
+        }
+      });
+    };
+  }, []);
 
   useEffect(() => {
     const fetchInstructor = async () => {
@@ -106,131 +146,6 @@ const InstructorProfilePage = () => {
     fetchInstructor();
   }, [id]);
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'about':
-        return (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-2xl font-semibold mb-4">About</h2>
-              <h3 className="text-xl mb-3">Certified Golf Instructor and Fitter</h3>
-              <div className="space-y-4 text-gray-600">
-                <p>{instructor?.bio}</p>
-                {instructor?.additional_bio && <p>{instructor.additional_bio}</p>}
-              </div>
-            </div>
-
-            {/* Specialties Section */}
-            <div>
-              <h2 className="text-2xl font-semibold mb-6">Specialities</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span className="text-blue-600 hover:underline cursor-pointer">Short Game</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span className="text-blue-600 hover:underline cursor-pointer">Course Strategy</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span className="text-blue-600 hover:underline cursor-pointer">Mental Approach</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span className="text-blue-600 hover:underline cursor-pointer">Driving Distance</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span className="text-blue-600 hover:underline cursor-pointer">Advance Training</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Highlights Section */}
-            <div>
-              <h2 className="text-2xl font-semibold mb-6">Highlights</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="text-gray-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  </div>
-                  <span>Hired 4 Times</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-gray-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <span>3 Years In Business</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-gray-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <span>Offers Online Services</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-gray-600">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  </div>
-                  <span>2 Employees</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      case 'photos':
-        return (
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Photos</h2>
-            {/* Photos grid implementation */}
-          </div>
-        );
-      case 'services':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-semibold mb-4">Services</h2>
-            <div className="grid gap-6">
-              {instructor?.services.map((service, index) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold">{service.title}</h3>
-                    <div className="text-xl font-bold text-blue-600">${service.price}</div>
-                  </div>
-                  <p className="text-gray-600 mb-2">{service.description}</p>
-                  <div className="text-gray-500">Duration: {service.duration} minutes</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      case 'faqs':
-        return (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-semibold mb-4">FAQs</h2>
-            <div className="space-y-4">
-              {instructor?.faqs.map((faq, index) => (
-                <div key={index} className="border-b pb-4 last:border-b-0">
-                  <h3 className="font-semibold mb-2">{faq.question}</h3>
-                  <p className="text-gray-600">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -254,7 +169,7 @@ const InstructorProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F9FAFB]">
       <Navbar />
 
       <main className="container mx-auto px-6 py-8">
@@ -262,10 +177,10 @@ const InstructorProfilePage = () => {
           {/* Main Content */}
           <div className="lg:col-span-2">
             {/* Profile Header */}
-            <div className="bg-white rounded-xl p-8 mb-8">
+            <div className="mb-12">
               <div className="flex flex-col md:flex-row gap-8">
                 {/* Profile Image */}
-                <div className="w-64 h-64 rounded-lg overflow-hidden flex-shrink-0">
+                <div className="w-64 h-64 rounded-2xl overflow-hidden flex-shrink-0 shadow-md">
                   <img 
                     src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
                     alt={instructor.name}
@@ -274,64 +189,236 @@ const InstructorProfilePage = () => {
                 </div>
 
                 {/* Profile Info */}
-                <div className="flex-grow">
-                  <h1 className="text-3xl font-bold mb-2">{instructor.name}</h1>
-                  <p className="text-gray-600 text-lg mb-4">{instructor.tagline}</p>
+                <div className="flex-grow space-y-6">
+                  {/* Name and Tagline */}
+                  <div>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-3">{instructor.name}</h1>
+                    <p className="text-xl text-gray-500 italic">
+                      Helping golfers master their swing with {instructor.experience}+ years of coaching experience
+                    </p>
+                  </div>
+
+                  {/* Location */}
+                  <div className="flex items-center gap-2 text-gray-700">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    <span className="text-lg">{instructor.location}</span>
+                  </div>
+
+                  {/* Badges */}
+                  <div className="flex flex-wrap items-center gap-4 text-lg">
+                    {/* Experience Badge */}
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-500" />
+                      <span className="text-gray-700">{instructor.experience}+ Years Experience</span>
+                    </div>
+                    <span className="text-gray-300">|</span>
+                    
+                    {/* Specialty Badge */}
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span className="text-gray-700">Swing Analysis Specialist</span>
+                    </div>
+                    <span className="text-gray-300">|</span>
+                    
+                    {/* Certification Badge */}
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-500" />
+                      <span className="text-gray-700">PGA Certified</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Tabs and Content */}
-            <div className="bg-white rounded-xl">
-              {/* Tabs */}
-              <div className="border-b">
-                <div className="flex space-x-8 px-6">
-                  <button
-                    className={`py-4 px-2 -mb-px font-medium ${
-                      activeTab === 'about'
-                        ? 'border-b-2 border-blue-600 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    onClick={() => setActiveTab('about')}
-                  >
-                    About
-                  </button>
-                  <button
-                    className={`py-4 px-2 -mb-px font-medium ${
-                      activeTab === 'photos'
-                        ? 'border-b-2 border-blue-600 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    onClick={() => setActiveTab('photos')}
-                  >
-                    Photos
-                  </button>
-                  <button
-                    className={`py-4 px-2 -mb-px font-medium ${
-                      activeTab === 'services'
-                        ? 'border-b-2 border-blue-600 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    onClick={() => setActiveTab('services')}
-                  >
-                    Services
-                  </button>
-                  <button
-                    className={`py-4 px-2 -mb-px font-medium ${
-                      activeTab === 'faqs'
-                        ? 'border-b-2 border-blue-600 text-blue-600'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                    onClick={() => setActiveTab('faqs')}
-                  >
-                    FAQs
-                  </button>
+            {/* Navigation Tabs */}
+            <div className="border-b border-gray-200 mb-8">
+              <div className="flex space-x-8">
+                <button
+                  onClick={() => scrollToSection(aboutRef, 'about')}
+                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    activeTab === 'about'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  About
+                </button>
+                <button
+                  onClick={() => scrollToSection(photosRef, 'photos')}
+                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    activeTab === 'photos'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Photos
+                </button>
+                <button
+                  onClick={() => scrollToSection(servicesRef, 'services')}
+                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    activeTab === 'services'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Services
+                </button>
+                <button
+                  onClick={() => scrollToSection(faqsRef, 'faqs')}
+                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    activeTab === 'faqs'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  FAQs
+                </button>
+              </div>
+            </div>
+
+            {/* Content Sections */}
+            <div className="space-y-16">
+              {/* About Section */}
+              <div id="about" ref={aboutRef}>
+                <h2 className="text-2xl font-semibold mb-6">About</h2>
+                <div className="space-y-8">
+                  <div>
+                    <h3 className="text-xl mb-3">Certified Golf Instructor and Fitter</h3>
+                    <div className="space-y-4 text-gray-600">
+                      <p>{instructor?.bio}</p>
+                      {instructor?.additional_bio && <p>{instructor.additional_bio}</p>}
+                    </div>
+                  </div>
+
+                  {/* Specialties Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4">Specialities</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">•</span>
+                        <span className="text-blue-600 hover:underline cursor-pointer">Short Game</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">•</span>
+                        <span className="text-blue-600 hover:underline cursor-pointer">Course Strategy</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">•</span>
+                        <span className="text-blue-600 hover:underline cursor-pointer">Mental Approach</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">•</span>
+                        <span className="text-blue-600 hover:underline cursor-pointer">Driving Distance</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-blue-600">•</span>
+                        <span className="text-blue-600 hover:underline cursor-pointer">Advance Training</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Highlights Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold mb-4">Highlights</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="flex items-center gap-3">
+                        <div className="text-gray-600">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                          </svg>
+                        </div>
+                        <span>Hired 4 Times</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-gray-600">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <span>3 Years In Business</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-gray-600">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <span>Offers Online Services</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="text-gray-600">
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                          </svg>
+                        </div>
+                        <span>2 Employees</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Tab Content */}
-              <div className="p-6">
-                {renderTabContent()}
+              {/* Photos Section */}
+              <div id="photos" ref={photosRef}>
+                <h2 className="text-2xl font-semibold mb-6">Photos</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Golf Course Photo */}
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <img 
+                      src="https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=2070&auto=format&fit=crop"
+                      alt="Golf Course"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  {/* Golf Training Photo */}
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <img 
+                      src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
+                      alt="Golf Training"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                  {/* Golf Club Photo */}
+                  <div className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <img 
+                      src="https://images.unsplash.com/photo-1592919505780-303950717480?q=80&w=2070&auto=format&fit=crop"
+                      alt="Golf Club"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Services Section */}
+              <div id="services" ref={servicesRef}>
+                <h2 className="text-2xl font-semibold mb-6">Services</h2>
+                <div className="grid gap-6">
+                  {instructor?.services.map((service, index) => (
+                    <div key={index} className="border rounded-lg p-4 bg-white">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="text-lg font-semibold">{service.title}</h3>
+                        <div className="text-xl font-bold text-blue-600">${service.price}</div>
+                      </div>
+                      <p className="text-gray-600 mb-2">{service.description}</p>
+                      <div className="text-gray-500">Duration: {service.duration} minutes</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* FAQs Section */}
+              <div id="faqs" ref={faqsRef}>
+                <h2 className="text-2xl font-semibold mb-6">FAQs</h2>
+                <div className="space-y-4">
+                  {instructor?.faqs.map((faq, index) => (
+                    <div key={index} className="border-b pb-4 last:border-b-0">
+                      <h3 className="font-semibold mb-2">{faq.question}</h3>
+                      <p className="text-gray-600">{faq.answer}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -339,7 +426,7 @@ const InstructorProfilePage = () => {
           {/* Right Sidebar */}
           <div className="space-y-6">
             {/* Info Card */}
-            <div className="bg-white rounded-xl p-6 shadow-sm">
+            <div className="p-6 border rounded-xl shadow-sm bg-white">
               <div className="space-y-4">
                 {/* Location */}
                 <div className="flex items-center gap-2">
