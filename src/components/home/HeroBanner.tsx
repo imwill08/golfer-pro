@@ -5,11 +5,10 @@ import { Input } from '@/components/ui/input';
 import './HeroBanner.css';
 
 const categories = [
-  { id: 'in-person', label: 'In-Person' },
-  { id: 'online', label: 'Online' },
-  { id: 'advance-training', label: 'Advance training' },
-  { id: 'strategy-coaching', label: 'Strategy Coaching' },
-  { id: 'junior-golf', label: 'Junior Golf' }
+  { id: 'private-lessons', label: 'Private Lessons' },
+  { id: 'online-coaching', label: 'Online Coaching' },
+  { id: 'group-lessons', label: 'Group Lessons' },
+  { id: 'on-course-instruction', label: 'On-Course Instruction' }
 ];
 
 const HeroBanner = () => {
@@ -90,24 +89,36 @@ const HeroBanner = () => {
           <div className="search-divider" />
           
           {/* Categories Section */}
-          <div className="search-section">
+          <div className="flex-1 px-4 relative">
             <button 
               ref={categoriesButtonRef}
-              className="section-button"
+              className="w-full flex items-center justify-between text-sm text-gray-500 hover:text-gray-900"
               onClick={toggleCategoriesPopup}
             >
               <span>
-                {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : 'Categories'}
+                {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : 'Services'}
               </span>
               <ChevronDown className={`w-5 h-5 transform transition-transform ${showCategoriesPopup ? 'rotate-180' : ''}`} />
             </button>
 
             {showCategoriesPopup && (
-              <div ref={categoriesPopupRef} className="dropdown-popup categories-popup">
+              <div 
+                ref={categoriesPopupRef} 
+                className="absolute top-[calc(100%+8px)] left-0 w-full bg-white rounded-lg shadow-lg py-1 z-50"
+                style={{
+                  minWidth: '200px',
+                  maxHeight: '300px',
+                  overflowY: 'auto'
+                }}
+              >
                 {categories.map((category) => (
                   <button
                     key={category.id}
-                    className={`dropdown-item ${selectedCategory === category.id ? 'selected' : ''}`}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors ${
+                      selectedCategory === category.id 
+                        ? 'text-blue-600 bg-blue-50' 
+                        : 'text-gray-700'
+                    }`}
                     onClick={() => handleCategorySelect(category.id)}
                   >
                     {category.label}

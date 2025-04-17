@@ -82,7 +82,7 @@ const InstructorProfilePage = () => {
       });
     };
   }, []);
-
+  
   useEffect(() => {
     const fetchInstructor = async () => {
       try {
@@ -91,7 +91,7 @@ const InstructorProfilePage = () => {
           .select('*')
           .eq('id', id)
           .single();
-
+          
         if (error) throw error;
         
         if (data) {
@@ -142,7 +142,7 @@ const InstructorProfilePage = () => {
         setLoading(false);
       }
     };
-
+    
     fetchInstructor();
   }, [id]);
 
@@ -153,7 +153,7 @@ const InstructorProfilePage = () => {
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
-      </div>
+          </div>
     );
   }
 
@@ -171,11 +171,11 @@ const InstructorProfilePage = () => {
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
       <Navbar />
-
+      
       <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2">
             {/* Profile Header */}
             <div className="mb-12">
               <div className="flex flex-col md:flex-row gap-8">
@@ -233,51 +233,53 @@ const InstructorProfilePage = () => {
             </div>
 
             {/* Navigation Tabs */}
-            <div className="border-b border-gray-200 mb-8">
-              <div className="flex space-x-8">
-                <button
-                  onClick={() => scrollToSection(aboutRef, 'about')}
-                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
-                    activeTab === 'about'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  About
-                </button>
-                <button
-                  onClick={() => scrollToSection(photosRef, 'photos')}
-                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
-                    activeTab === 'photos'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Photos
-                </button>
-                <button
-                  onClick={() => scrollToSection(servicesRef, 'services')}
-                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
-                    activeTab === 'services'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Services
-                </button>
-                <button
-                  onClick={() => scrollToSection(faqsRef, 'faqs')}
-                  className={`py-4 px-2 font-medium border-b-2 transition-colors ${
-                    activeTab === 'faqs'
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  FAQs
-                </button>
+            <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+              <div className="container mx-auto">
+                <div className="flex space-x-8">
+                  <button
+                    onClick={() => scrollToSection(aboutRef, 'about')}
+                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                      activeTab === 'about'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    About
+                  </button>
+                  <button
+                    onClick={() => scrollToSection(photosRef, 'photos')}
+                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                      activeTab === 'photos'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Photos
+                  </button>
+                  <button
+                    onClick={() => scrollToSection(servicesRef, 'services')}
+                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                      activeTab === 'services'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Services
+                  </button>
+                  <button
+                    onClick={() => scrollToSection(faqsRef, 'faqs')}
+                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                      activeTab === 'faqs'
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    FAQs
+                  </button>
+                </div>
               </div>
             </div>
-
+            
             {/* Content Sections */}
             <div className="space-y-16">
               {/* About Section */}
@@ -524,7 +526,7 @@ const InstructorProfilePage = () => {
           </div>
         </div>
       </main>
-
+      
       <Footer />
     </div>
   );

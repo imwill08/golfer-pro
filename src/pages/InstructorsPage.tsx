@@ -14,11 +14,10 @@ import { Slider } from '@/components/ui/slider';
 import { Link } from 'react-router-dom';
 
 const categories = [
-  { id: 'in-person', label: 'In-Person' },
-  { id: 'online', label: 'Online' },
-  { id: 'advance-training', label: 'Advance training' },
-  { id: 'strategy-coaching', label: 'Strategy Coaching' },
-  { id: 'junior-golf', label: 'Junior Golf' }
+  { id: 'private-lessons', label: 'Private Lessons' },
+  { id: 'online-coaching', label: 'Online Coaching' },
+  { id: 'group-lessons', label: 'Group Lessons' },
+  { id: 'on-course-instruction', label: 'On-Course Instruction' }
 ];
 
 const InstructorsPage = () => {
@@ -31,6 +30,8 @@ const InstructorsPage = () => {
   const [experienceRange, setExperienceRange] = useState([0, 30]);
   const [priceRange, setPriceRange] = useState([0, 100]);
   const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showOtherCertification, setShowOtherCertification] = useState(false);
+  const [otherCertification, setOtherCertification] = useState('');
 
   const categoriesButtonRef = useRef<HTMLButtonElement>(null);
   const categoriesPopupRef = useRef<HTMLDivElement>(null);
@@ -81,6 +82,13 @@ const InstructorsPage = () => {
     setRadius(parseInt(e.target.value));
   };
 
+  const handleOtherCertificationToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowOtherCertification(e.target.checked);
+    if (!e.target.checked) {
+      setOtherCertification('');
+    }
+  };
+
   // Close popups when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -125,19 +133,23 @@ const InstructorsPage = () => {
       return (
         <div key={instructor.id} className="p-6 flex gap-8">
           {/* Profile Image */}
-          <div className="w-48 h-48 rounded-lg overflow-hidden flex-shrink-0">
-            <img 
-              src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
-              alt={instructor.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <Link to={`/instructors/${instructor.id}`} className="block w-48 h-48 flex-shrink-0">
+            <div className="w-full h-full rounded-lg overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
+                alt={instructor.name}
+                className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+          </Link>
 
           {/* Content */}
           <div className="flex-grow">
             {/* Header */}
             <div className="mb-4">
-              <h3 className="text-2xl font-bold mb-2 text-gray-900">{instructor.name}</h3>
+              <Link to={`/instructors/${instructor.id}`} className="block">
+                <h3 className="text-2xl font-bold mb-2 text-gray-900 hover:text-blue-600 transition-colors">{instructor.name}</h3>
+              </Link>
               <div className="flex items-center text-gray-600">
                 <MapPin className="w-5 h-5 mr-2" />
                 {instructor.location}
@@ -191,18 +203,20 @@ const InstructorsPage = () => {
     return (
       <div key={instructor.id} className="overflow-hidden group">
         {/* Image Container */}
-        <div className="relative h-[260px] rounded-2xl overflow-hidden mb-4">
-          <img 
-            src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
-            alt={instructor.name}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
-          <div className="absolute bottom-4 left-4 text-white">
-            <h3 className="text-2xl font-semibold mb-1">{instructor.name}</h3>
-            <p className="text-sm opacity-90">{instructor.location}</p>
+        <Link to={`/instructors/${instructor.id}`} className="block">
+          <div className="relative h-[260px] rounded-2xl overflow-hidden mb-4">
+            <img 
+              src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
+              alt={instructor.name}
+              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/50" />
+            <div className="absolute bottom-4 left-4 text-white">
+              <h3 className="text-2xl font-semibold mb-1">{instructor.name}</h3>
+              <p className="text-sm opacity-90">{instructor.location}</p>
+            </div>
           </div>
-        </div>
+        </Link>
 
         {/* Details Container */}
         <div className="space-y-3">
@@ -271,7 +285,7 @@ const InstructorsPage = () => {
                       onClick={toggleCategoriesPopup}
                     >
                       <span>
-                        {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : 'Categories'}
+                        {selectedCategory ? categories.find(c => c.id === selectedCategory)?.label : 'Services'}
                       </span>
                       <ChevronDown className={`w-5 h-5 transform transition-transform ${showCategoriesPopup ? 'rotate-180' : ''}`} />
                     </button>
@@ -360,20 +374,31 @@ const InstructorsPage = () => {
               <div className="sticky top-8">
                 <h2 className="text-lg font-semibold mb-6">Filters</h2>
                 
-                {/* Location Filter */}
+                {/* Specialties Filter */}
                 <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-700 mb-2">Location</h3>
-                  <input
-                    type="text"
-                    placeholder="Enter location"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                  />
-                </div>
-                
-                {/* Lesson Type Filter */}
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-gray-700 mb-3">Lesson Type</h3>
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Specialties</h3>
                   <div className="space-y-2.5">
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">Short Game</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">Driving Distance</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">Mental Approach</span>
+                    </label>
                     <label className="flex items-center text-sm cursor-pointer">
                       <input 
                         type="checkbox" 
@@ -386,14 +411,35 @@ const InstructorsPage = () => {
                         type="checkbox" 
                         className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                       />
-                      <span className="ml-2 text-gray-600">Online</span>
+                      <span className="ml-2 text-gray-600">Advanced Training</span>
                     </label>
                     <label className="flex items-center text-sm cursor-pointer">
                       <input 
                         type="checkbox" 
                         className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                       />
-                      <span className="ml-2 text-gray-600">Academy</span>
+                      <span className="ml-2 text-gray-600">Putting</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">Course Strategy</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">Beginner Lessons</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">Junior Coaching</span>
                     </label>
                   </div>
                 </div>
@@ -435,80 +481,66 @@ const InstructorsPage = () => {
                   </div>
                 </div>
 
-                {/* More Options */}
+                {/* Certifications Section */}
                 <div className="border-t border-gray-200 pt-6">
-                  <button
-                    onClick={() => setShowMoreOptions(!showMoreOptions)}
-                    className="w-full flex items-center justify-between text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                  >
-                    More Options
-                    <ChevronDown 
-                      className={`w-4 h-4 transform transition-transform duration-200 ${
-                        showMoreOptions ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </button>
-                  {showMoreOptions && (
-                    <div className="mt-4 space-y-2.5">
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Certifications</h3>
+                  <div className="space-y-2.5">
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">PGA Certified</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">LPGA Certified</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-gray-600">TPI Certified</span>
+                    </label>
+                    <label className="flex items-center text-sm cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                        checked={showOtherCertification}
+                        onChange={handleOtherCertificationToggle}
+                      />
+                      <span className="ml-2 text-gray-600">Other Certification</span>
+                    </label>
+                    
+                    {/* Other Certification Input */}
+                    {showOtherCertification && (
+                      <div className="ml-6 mt-2">
+                        <Input
+                          type="text"
+                          placeholder="Enter your certification"
+                          value={otherCertification}
+                          onChange={(e) => setOtherCertification(e.target.value)}
+                          className="w-full px-3 py-2 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
-                        <span className="ml-2 text-gray-600">Beginner-friendly</span>
-                      </label>
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-600">Short Game Specialist</span>
-                      </label>
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-600">PGA Certified</span>
-                      </label>
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-600">LPGA Certified</span>
-                      </label>
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-600">TPI Certified</span>
-                      </label>
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-600">US Kids Certified</span>
-                      </label>
-                      <label className="flex items-center text-sm cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          className="form-checkbox h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
-                        />
-                        <span className="ml-2 text-gray-600">Golf Digest Certified</span>
-                      </label>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                
+
                 {/* Apply Button */}
                 <div className="mt-8">
-                  <button className="w-full bg-blue-600 text-white py-2.5 px-2 rounded-full font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                  <button 
+                    onClick={() => handleFiltersChange(filters)}
+                    className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-full font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
                     Apply
                   </button>
                 </div>
+
               </div>
             </div>
             
@@ -549,17 +581,21 @@ const InstructorsPage = () => {
                   ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10' 
                   : 'grid-cols-1 gap-6'
               }`}>
-                {!isLoading && !error && instructors.map(renderInstructorCard)}
+                {!isLoading && !error && instructors.map(instructor => (
+                  <div key={instructor.id} className={viewMode === 'list' ? 'flex flex-col md:flex-row gap-4 md:gap-8 p-4 md:p-6' : ''}>
+                    {renderInstructorCard(instructor)}
+                  </div>
+                ))}
               </div>
               
               {/* Pagination */}
               {filteredCount > 0 && (
                 <div className="mt-8">
-                <InstructorPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={goToPage}
-                />
+                  <InstructorPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={goToPage}
+                  />
                 </div>
               )}
             </div>
