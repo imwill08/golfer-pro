@@ -1,13 +1,14 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
 	darkMode: ["class"],
 	content: [
-		"./pages/**/*.{ts,tsx}",
-		"./components/**/*.{ts,tsx}",
-		"./app/**/*.{ts,tsx}",
-		"./src/**/*.{ts,tsx}",
+		"./src/**/*.{js,jsx,ts,tsx}",
+		"./src/pages/**/*.{js,jsx,ts,tsx}",
+		"./src/components/**/*.{js,jsx,ts,tsx}",
+		"./src/app/**/*.{js,jsx,ts,tsx}",
+		"./src/layouts/**/*.{js,jsx,ts,tsx}",
+		"./src/pages/static/**/*.{js,jsx,ts,tsx}"
 	],
 	prefix: "",
 	theme: {
@@ -63,12 +64,10 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom colors for golf app
 				golf: {
 					green: '#2E7D32',
-					// Updated blue colors based on navy theme requested
-					blue: '#0D3B66',       // Dark navy blue as primary
-					lightBlue: '#4A90E2',  // Lighter blue as secondary
+					blue: '#0D3B66',
+					lightBlue: '#4A90E2',
 					sand: '#F5DEB3',
 					gray: '#F5F5F5',
 					darkGray: '#424242',

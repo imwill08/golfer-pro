@@ -1,8 +1,8 @@
-
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MapPin, Clock, Award, MonitorSmartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export interface InstructorProps {
   id: string;
@@ -10,9 +10,14 @@ export interface InstructorProps {
   location: string;
   experience: number;
   specialization: string;
-  lessonType: string[];
+  lessonType: string;
   priceRange: string;
   imageUrl: string;
+  specialty?: string;
+  image?: string;
+  rate?: string;
+  certifications?: string[];
+  services?: any[];
 }
 
 const InstructorCard = ({
@@ -23,47 +28,97 @@ const InstructorCard = ({
   specialization,
   lessonType,
   priceRange,
-  imageUrl
+  imageUrl,
+  specialty,
+  certifications
 }: InstructorProps) => {
+  const navigate = useNavigate();
+  // Convert lessonType to array if it's a string
+  const lessonTypes = typeof lessonType === 'string' 
+    ? lessonType.split(' / ') 
+    : Array.isArray(lessonType) ? lessonType : [];
+    
+  // Use a fallback image if imageUrl is empty
+  const imageSource = imageUrl && imageUrl.trim() !== '' 
+    ? imageUrl 
+    : 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop';
+    
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on the button
+    if (!(e.target as HTMLElement).closest('.view-profile-btn')) {
+      navigate(`/instructors/${id}`);
+    }
+  };
+    
   return (
-    <div className="instructor-card bg-white rounded-lg overflow-hidden shadow-md">
-      <div className="h-60 relative overflow-hidden">
+    <div 
+      className="group bg-card rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg border border-border cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <div className="aspect-[4/3] sm:aspect-[3/2] relative overflow-hidden">
         <img
-          src={imageUrl}
+          src={imageSource}
           alt={name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            // Fallback if image fails to load
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop';
+          }}
         />
-        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-4">
-          <h3 className="text-white text-xl font-semibold">{name}</h3>
-          <div className="flex items-center text-white/90 text-sm">
-            <MapPin size={14} className="mr-1" />
-            <span>{location}</span>
-          </div>
+        <div className="absolute top-2 right-2">
+          <Badge variant="default" className="bg-primary text-primary-foreground">
+            {priceRange}
+          </Badge>
         </div>
       </div>
       
       <div className="p-4">
-        <div className="flex items-center mb-2">
-          <Clock size={16} className="text-gray-500 mr-2" />
-          <span className="text-sm text-gray-700">{experience} Years Coaching</span>
+        <div className="mb-2">
+          <h3 className="text-lg font-semibold line-clamp-1">{name}</h3>
+          <div className="flex items-center text-muted-foreground text-sm">
+            <MapPin size={14} className="mr-1 flex-shrink-0" />
+            <span className="line-clamp-1">{location}</span>
+          </div>
         </div>
-        
-        <div className="flex items-center mb-2">
-          <Award size={16} className="text-gray-500 mr-2" />
-          <span className="text-sm text-gray-700">{specialization}</span>
+
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Clock size={14} className="mr-2 flex-shrink-0" />
+            <span className="line-clamp-1">{experience} Years Experience</span>
+          </div>
+          
+          <div className="flex items-center text-sm text-muted-foreground">
+            <Award size={14} className="mr-2 flex-shrink-0" />
+            <span className="line-clamp-1">{specialization || specialty || 'Swing Analysis Specialist'}</span>
+          </div>
+          
+          <div className="flex items-center text-sm text-muted-foreground">
+            <MonitorSmartphone size={14} className="mr-2 flex-shrink-0" />
+            <span className="line-clamp-1">
+              {lessonTypes.length > 0 ? lessonTypes.join(' / ') : 'In-Person / Online'}
+            </span>
+          </div>
         </div>
+
+        {certifications && certifications.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-4">
+            {certifications.slice(0, 2).map((cert, index) => (
+              <Badge key={index} variant="outline" className="text-xs">
+                {cert}
+              </Badge>
+            ))}
+            {certifications.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{certifications.length - 2} more
+              </Badge>
+            )}
+          </div>
+        )}
         
-        <div className="flex items-center mb-4">
-          <MonitorSmartphone size={16} className="text-gray-500 mr-2" />
-          <span className="text-sm text-gray-700">{lessonType.join(' / ')}</span>
-        </div>
-        
-        <div className="mb-4">
-          <div className="text-lg font-semibold text-golf-blue">{priceRange}</div>
-        </div>
-        
-        <Link to={`/instructors/${id}`}>
-          <Button className="w-full">View Profile</Button>
+        <Link to={`/instructors/${id}`} className="block view-profile-btn">
+          <Button className="w-full" variant="default">
+            View Profile
+          </Button>
         </Link>
       </div>
     </div>

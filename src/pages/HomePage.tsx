@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
@@ -13,6 +12,8 @@ const HomePage = () => {
       <Navbar />
       
       <main>
+        <div className="container mx-auto px-4 py-8">
+        </div>
         <HeroBanner />
         <CategorySection />
         <FeaturedInstructors />

@@ -1,143 +1,107 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/layout/Navbar';
 import Footer from '@/components/layout/Footer';
-import { MapPin, Trophy, Globe, Mail, Phone, Instagram } from 'lucide-react';
+import { MapPin, Trophy, Award, Star, Mail, Phone, Globe, Instagram, Youtube, Facebook, Eye, MousePointerClick } from 'lucide-react';
+import ProfileSidebar from '@/components/instructors/ProfileSidebar';
+import { cn } from '@/lib/utils';
 
 interface InstructorProfile {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
   location: string;
   tagline: string;
   experience: number;
   specialization: string;
   bio: string;
-  additional_bio?: string;
-  certifications: string[];
-  specialties: string[];
+  photos: string[];
   services: {
     title: string;
     description: string;
-    duration: number;
+    duration: string;
     price: number;
   }[];
-  highlights: {
-    label: string;
-    icon: string;
-  }[];
-  contact_info: {
-    email: string;
-    phone: string;
-    website?: string;
-  };
   faqs: {
     question: string;
     answer: string;
   }[];
+  contact_info: {
+    email: string;
+    phone: string;
+    website: string;
+    instagram: string;
+    youtube: string;
+    facebook: string;
+  };
+  certifications: string[];
+  rating: number;
+  review_count: number;
+  stats?: {
+    profile_views: number;
+    contact_clicks: number;
+  };
 }
 
 const InstructorProfilePage = () => {
   const { id } = useParams();
   const [instructor, setInstructor] = useState<InstructorProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('about');
+  const viewTracked = useRef(false);
 
-  // Add refs for scroll functionality
+  // Refs for scroll sections
   const aboutRef = useRef<HTMLDivElement>(null);
   const photosRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
   const faqsRef = useRef<HTMLDivElement>(null);
 
-  const scrollToSection = (ref: React.RefObject<HTMLDivElement>, tab: string) => {
-    ref.current?.scrollIntoView({ behavior: 'smooth' });
-    setActiveTab(tab);
-  };
-
-  // Add scroll spy effect
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveTab(entry.target.id);
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
-    const sections = [aboutRef, photosRef, servicesRef, faqsRef];
-    sections.forEach((section) => {
-      if (section.current) {
-        observer.observe(section.current);
-      }
-    });
-
-    return () => {
-      sections.forEach((section) => {
-        if (section.current) {
-          observer.unobserve(section.current);
-        }
-      });
-    };
-  }, []);
-  
   useEffect(() => {
     const fetchInstructor = async () => {
+      if (!id) {
+        setError('No instructor ID provided');
+        setLoading(false);
+        return;
+      }
+
       try {
-        const { data, error } = await supabase
+        // First fetch the stats directly
+        const { data: statsData } = await supabase
+          .from('instructor_stats')
+          .select('profile_views, contact_clicks')
+          .eq('instructor_id', id)
+          .single();
+
+        // Then fetch instructor data
+        const { data: instructorData, error: instructorError } = await supabase
           .from('instructors')
           .select('*')
           .eq('id', id)
+          .eq('status', 'approved')
           .single();
-          
-        if (error) throw error;
-        
-        if (data) {
-          // Transform the data to match our InstructorProfile interface
-          const transformedData: InstructorProfile = {
-            id: data.id,
-            name: data.name,
-            location: data.location,
-            tagline: data.tagline,
-            experience: data.experience,
-            specialization: data.specialization,
-            bio: data.bio,
-            additional_bio: data.additional_bio,
-            certifications: Array.isArray(data.certifications) ? data.certifications : [],
-            specialties: Array.isArray(data.specialties) ? data.specialties : [],
-            services: Array.isArray(data.services) ? data.services.map((service: any) => ({
-              title: service.title || '',
-              description: service.description || '',
-              duration: Number(service.duration) || 0,
-              price: Number(service.price) || 0
-            })) : [],
-            highlights: Array.isArray(data.highlights) ? data.highlights.map((highlight: any) => ({
-              label: highlight.label || '',
-              icon: highlight.icon || ''
-            })) : [],
-            contact_info: {
-              email: typeof data.contact_info === 'object' && data.contact_info !== null 
-                ? (data.contact_info as any).email || ''
-                : '',
-              phone: typeof data.contact_info === 'object' && data.contact_info !== null 
-                ? (data.contact_info as any).phone || ''
-                : '',
-              website: typeof data.contact_info === 'object' && data.contact_info !== null 
-                ? (data.contact_info as any).website
-                : undefined
-            },
-            faqs: Array.isArray(data.faqs) ? data.faqs.map((faq: any) => ({
-              question: faq.question || '',
-              answer: faq.answer || ''
-            })) : []
-          };
 
-          setInstructor(transformedData);
+        if (instructorError) throw instructorError;
+        
+        if (!instructorData) {
+          setError('Instructor not found');
+          setLoading(false);
+          return;
         }
+        
+        // Combine instructor data with stats
+        const transformedData = {
+          ...instructorData,
+          stats: statsData || { profile_views: 0, contact_clicks: 0 }
+        };
+
+        console.log('Initial stats loaded:', transformedData.stats);
+        setInstructor(transformedData);
       } catch (err) {
         console.error('Error fetching instructor:', err);
+        setError('Failed to load instructor profile');
       } finally {
         setLoading(false);
       }
@@ -146,385 +110,527 @@ const InstructorProfilePage = () => {
     fetchInstructor();
   }, [id]);
 
+  // Track profile view
+  useEffect(() => {
+    const trackProfileView = async () => {
+      if (id && !viewTracked.current) {
+        try {
+          console.log('Tracking profile view for instructor:', id);
+          
+          // First check if a stats record exists
+          const { data: existingStats, error: checkError } = await supabase
+            .from('instructor_stats')
+            .select('*')
+            .eq('instructor_id', id)
+            .single();
+
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error('Error checking stats:', checkError);
+            return;
+          }
+
+          const newViewCount = (existingStats?.profile_views || 0) + 1;
+          console.log('Updating profile views to:', newViewCount);
+
+          if (existingStats) {
+            // Update existing record
+            const { error: updateError } = await supabase
+              .from('instructor_stats')
+              .update({ 
+                profile_views: newViewCount,
+                updated_at: new Date().toISOString()
+              })
+              .eq('instructor_id', id);
+
+            if (updateError) {
+              console.error('Error updating stats:', updateError);
+              return;
+            }
+          } else {
+            // Create new record
+            const { error: insertError } = await supabase
+              .from('instructor_stats')
+              .insert({
+                instructor_id: id,
+                profile_views: 1,
+                contact_clicks: 0
+              });
+
+            if (insertError) {
+              console.error('Error inserting stats:', insertError);
+              return;
+            }
+          }
+
+          viewTracked.current = true;
+
+          // Update the local state immediately
+          setInstructor(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              stats: {
+                ...prev.stats,
+                profile_views: newViewCount
+              }
+            };
+          });
+
+        } catch (err) {
+          console.error('Error tracking profile view:', err);
+        }
+      }
+    };
+
+    trackProfileView();
+  }, [id]);
+
+  // Track contact clicks
+  const trackContactClick = async (clickType: string) => {
+    if (!id) return;
+    
+    try {
+      console.log('Tracking contact click:', { instructor_id: id, click_type: clickType });
+
+      // First log the click
+      const { error: logError } = await supabase
+        .from('contact_click_logs')
+        .insert({
+          instructor_id: id,
+          click_type: clickType
+        });
+
+      if (logError) {
+        console.error('Error logging click:', logError);
+        return;
+      }
+
+      // Check if stats record exists and get current stats
+      const { data: existingStats, error: checkError } = await supabase
+        .from('instructor_stats')
+        .select('*')
+        .eq('instructor_id', id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking stats:', checkError);
+        return;
+      }
+
+      const newClickCount = (existingStats?.contact_clicks || 0) + 1;
+      console.log('Updating contact clicks to:', newClickCount);
+
+      if (existingStats) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('instructor_stats')
+          .update({ 
+            contact_clicks: newClickCount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('instructor_id', id);
+
+        if (updateError) {
+          console.error('Error updating stats:', updateError);
+          return;
+        }
+      } else {
+        // Create new record
+        const { error: insertError } = await supabase
+          .from('instructor_stats')
+          .insert({
+            instructor_id: id,
+            profile_views: 0,
+            contact_clicks: 1
+          });
+
+        if (insertError) {
+          console.error('Error inserting stats:', insertError);
+          return;
+        }
+      }
+
+      // Update the local state immediately
+      setInstructor(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          stats: {
+            ...prev.stats,
+            contact_clicks: newClickCount
+          }
+        };
+      });
+
+    } catch (err) {
+      console.error('Error tracking contact click:', err);
+    }
+  };
+
+  const scrollToSection = (sectionRef: React.RefObject<HTMLDivElement>, tabName: string) => {
+    sectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setActiveTab(tabName);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
+        <main className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-golf-blue"></div>
           </div>
+        </main>
+        <Footer />
+      </div>
     );
   }
 
-  if (!instructor) {
+  if (error || !instructor) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <div className="container mx-auto px-6 py-12">
-          <h1 className="text-2xl font-bold text-center">Instructor not found</h1>
-        </div>
+        <main className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {error || 'Instructor not found'}
+            </h2>
+          </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      <main className="container mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content */}
-            <div className="lg:col-span-2">
+      <main className="pt-16 pb-12">
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-golf-blue"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : instructor ? (
+          <>
             {/* Profile Header */}
-            <div className="mb-12">
-              <div className="flex flex-col md:flex-row gap-8">
-                {/* Profile Image */}
-                <div className="w-64 h-64 rounded-2xl overflow-hidden flex-shrink-0 shadow-md">
-                  <img 
-                    src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
-                    alt={instructor.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+            <div className="bg-white border-b">
+              <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-6">
+                {/* Profile Image - Mobile Optimized */}
+                <div className="flex flex-col items-center md:items-start md:flex-row gap-4 md:gap-8">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 flex-shrink-0">
+                    <img
+                      src={instructor.photos[0] || '/default-profile.png'}
+                      alt={instructor.name}
+                      className="w-full h-full object-cover rounded-lg shadow-sm"
+                    />
+                  </div>
 
-                {/* Profile Info */}
-                <div className="flex-grow space-y-6">
-                  {/* Name and Tagline */}
-                  <div>
-                    <h1 className="text-4xl font-bold text-gray-900 mb-3">{instructor.name}</h1>
-                    <p className="text-xl text-gray-500 italic">
-                      Helping golfers master their swing with {instructor.experience}+ years of coaching experience
+                  {/* Profile Info */}
+                  <div className="flex-1 text-center md:text-left">
+                    <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                      {instructor.name}
+                    </h1>
+                    <p className="text-sm sm:text-base text-gray-600 mb-4">
+                      {instructor.tagline}
                     </p>
-                  </div>
-
-                  {/* Location */}
-                  <div className="flex items-center gap-2 text-gray-700">
-                    <MapPin className="w-5 h-5 text-blue-600" />
-                    <span className="text-lg">{instructor.location}</span>
-                  </div>
-
-                  {/* Badges */}
-                  <div className="flex flex-wrap items-center gap-4 text-lg">
-                    {/* Experience Badge */}
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-yellow-500" />
-                      <span className="text-gray-700">{instructor.experience}+ Years Experience</span>
-                    </div>
-                    <span className="text-gray-300">|</span>
                     
-                    {/* Specialty Badge */}
-                    <div className="flex items-center gap-2">
-                      <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      <span className="text-gray-700">Swing Analysis Specialist</span>
+                    <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 mb-4">
+                      <MapPin className="w-4 h-4" />
+                      <span className="text-sm">{instructor.location}</span>
                     </div>
-                    <span className="text-gray-300">|</span>
-                    
-                    {/* Certification Badge */}
-                    <div className="flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-yellow-500" />
-                      <span className="text-gray-700">PGA Certified</span>
+
+                    <div className="flex flex-wrap justify-center md:justify-start gap-2 sm:gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-golf-blue" />
+                        <span className="text-xs sm:text-sm">{instructor.experience}+ Years Experience</span>
+                      </div>
+                      {instructor.certifications.map((cert, index) => (
+                        <div key={index} className="flex items-center gap-1.5">
+                          <Award className="w-4 h-4 sm:w-5 sm:h-5 text-golf-blue" />
+                          <span className="text-xs sm:text-sm">{cert}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Navigation Tabs */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
-              <div className="container mx-auto">
-                <div className="flex space-x-8">
+            {/* Navigation Tabs - Sticky */}
+            <div className="sticky top-16 bg-white border-b z-30">
+              <div className="container mx-auto px-0 sm:px-6 lg:px-8 max-w-7xl">
+                <nav className="grid grid-cols-4 w-full">
                   <button
                     onClick={() => scrollToSection(aboutRef, 'about')}
-                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    className={cn(
+                      "py-2.5 px-2 sm:py-4 sm:px-6 border-b-2 font-medium text-xs sm:text-sm md:text-base",
                       activeTab === 'about'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                        ? "border-golf-blue text-golf-blue"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    )}
                   >
                     About
                   </button>
                   <button
                     onClick={() => scrollToSection(photosRef, 'photos')}
-                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    className={cn(
+                      "py-2.5 px-2 sm:py-4 sm:px-6 border-b-2 font-medium text-xs sm:text-sm md:text-base",
                       activeTab === 'photos'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                        ? "border-golf-blue text-golf-blue"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    )}
                   >
                     Photos
                   </button>
                   <button
                     onClick={() => scrollToSection(servicesRef, 'services')}
-                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    className={cn(
+                      "py-2.5 px-2 sm:py-4 sm:px-6 border-b-2 font-medium text-xs sm:text-sm md:text-base",
                       activeTab === 'services'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                        ? "border-golf-blue text-golf-blue"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    )}
                   >
                     Services
                   </button>
                   <button
                     onClick={() => scrollToSection(faqsRef, 'faqs')}
-                    className={`py-4 px-2 font-medium border-b-2 transition-colors ${
+                    className={cn(
+                      "py-2.5 px-2 sm:py-4 sm:px-6 border-b-2 font-medium text-xs sm:text-sm md:text-base",
                       activeTab === 'faqs'
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                        ? "border-golf-blue text-golf-blue"
+                        : "border-transparent text-gray-500 hover:text-gray-700"
+                    )}
                   >
                     FAQs
                   </button>
-                </div>
+                </nav>
               </div>
             </div>
-            
-            {/* Content Sections */}
-            <div className="space-y-16">
-              {/* About Section */}
-              <div id="about" ref={aboutRef}>
-                <h2 className="text-2xl font-semibold mb-6">About</h2>
-                <div className="space-y-8">
-                  <div>
-                    <h3 className="text-xl mb-3">Certified Golf Instructor and Fitter</h3>
-                    <div className="space-y-4 text-gray-600">
-                      <p>{instructor?.bio}</p>
-                      {instructor?.additional_bio && <p>{instructor.additional_bio}</p>}
-                    </div>
+
+            {/* Main Content and Sidebar Layout */}
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-8">
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Main Content */}
+                <div className="flex-1 min-w-0">
+                  {/* About Section */}
+                  <div ref={aboutRef} className="mb-8">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-4">About</h2>
+                    <p className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap">{instructor.bio}</p>
                   </div>
 
-                  {/* Specialties Section */}
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4">Specialities</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-600">•</span>
-                        <span className="text-blue-600 hover:underline cursor-pointer">Short Game</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-600">•</span>
-                        <span className="text-blue-600 hover:underline cursor-pointer">Course Strategy</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-600">•</span>
-                        <span className="text-blue-600 hover:underline cursor-pointer">Mental Approach</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-600">•</span>
-                        <span className="text-blue-600 hover:underline cursor-pointer">Driving Distance</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-600">•</span>
-                        <span className="text-blue-600 hover:underline cursor-pointer">Advance Training</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Highlights Section */}
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4">Highlights</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="flex items-center gap-3">
-                        <div className="text-gray-600">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                          </svg>
+                  {/* Photos Section */}
+                  <div ref={photosRef} className="mb-8">
+                    <h2 className="text-xl sm:text-2xl font-bold mb-6">Photos</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      {instructor.photos.map((photo, index) => (
+                        <div key={index} className="w-full aspect-square overflow-hidden rounded-lg">
+                          <img
+                            src={photo}
+                            alt={`${instructor.name} - Photo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
-                        <span>Hired 4 Times</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-gray-600">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Services Section */}
+                  <div ref={servicesRef} className="mb-8">
+                    <h2 className="text-2xl font-bold mb-6">Services & Pricing</h2>
+                    <div className="space-y-6">
+                      {instructor.services.map((service, index) => (
+                        <div key={index} className="border-b pb-6 last:border-0 last:pb-0">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-2">
+                            <h3 className="text-lg font-semibold">{service.title}</h3>
+                            <span className="text-lg font-medium text-golf-blue">
+                              ${service.price}/hr
+                            </span>
+                          </div>
+                          <p className="text-gray-600 mb-2">{service.description}</p>
+                          <p className="text-sm text-gray-500">Duration: {service.duration}</p>
                         </div>
-                        <span>3 Years In Business</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* FAQs Section */}
+                  {instructor.faqs && instructor.faqs.length > 0 && (
+                    <div ref={faqsRef}>
+                      <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
+                      <div className="space-y-6">
+                        {instructor.faqs.map((faq, index) => (
+                          <div key={index} className="border-b pb-6 last:border-0 last:pb-0">
+                            <h3 className="text-lg font-semibold mb-2">{faq.question}</h3>
+                            <p className="text-gray-700">{faq.answer}</p>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-gray-600">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sidebar */}
+                <div className="w-full lg:w-80">
+                  <div className="bg-white rounded-lg shadow-sm p-6 sticky top-32">
+                    {/* Profile Stats */}
+                    <div className="flex justify-between mb-6 pb-4 border-b">
+                      <div className="flex items-center gap-2">
+                        <Eye className="w-5 h-5 text-golf-blue" />
+                        <div>
+                          <div className="text-sm text-gray-500">Profile Views</div>
+                          <div className="font-semibold text-xl">{instructor?.stats?.profile_views || 0}</div>
                         </div>
-                        <span>Offers Online Services</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-gray-600">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
+                      <div className="flex items-center gap-2">
+                        <MousePointerClick className="w-5 h-5 text-golf-blue" />
+                        <div>
+                          <div className="text-sm text-gray-500">Contact Clicks</div>
+                          <div className="font-semibold text-xl">{instructor?.stats?.contact_clicks || 0}</div>
                         </div>
-                        <span>2 Employees</span>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </div>
 
-              {/* Photos Section */}
-              <div id="photos" ref={photosRef}>
-                <h2 className="text-2xl font-semibold mb-6">Photos</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {/* Golf Course Photo */}
-                  <div className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                    <img 
-                      src="https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=2070&auto=format&fit=crop"
-                      alt="Golf Course"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  {/* Golf Training Photo */}
-                  <div className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                    <img 
-                      src="https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop"
-                      alt="Golf Training"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  {/* Golf Club Photo */}
-                  <div className="aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                    <img 
-                      src="https://images.unsplash.com/photo-1592919505780-303950717480?q=80&w=2070&auto=format&fit=crop"
-                      alt="Golf Club"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Services Section */}
-              <div id="services" ref={servicesRef}>
-                <h2 className="text-2xl font-semibold mb-6">Services</h2>
-                <div className="grid gap-6">
-                  {instructor?.services.map((service, index) => (
-                    <div key={index} className="border rounded-lg p-4 bg-white">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="text-lg font-semibold">{service.title}</h3>
-                        <div className="text-xl font-bold text-blue-600">${service.price}</div>
+                    {/* Location */}
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-golf-blue" />
+                        <span className="font-medium">Location: {instructor.location}</span>
                       </div>
-                      <p className="text-gray-600 mb-2">{service.description}</p>
-                      <div className="text-gray-500">Duration: {service.duration} minutes</div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* FAQs Section */}
-              <div id="faqs" ref={faqsRef}>
-                <h2 className="text-2xl font-semibold mb-6">FAQs</h2>
-                <div className="space-y-4">
-                  {instructor?.faqs.map((faq, index) => (
-                    <div key={index} className="border-b pb-4 last:border-b-0">
-                      <h3 className="font-semibold mb-2">{faq.question}</h3>
-                      <p className="text-gray-600">{faq.answer}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* Info Card */}
-            <div className="p-6 border rounded-xl shadow-sm bg-white">
-              <div className="space-y-4">
-                {/* Location */}
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-gray-500" />
-                  <span className="text-gray-700">Location: {instructor.location}</span>
-                </div>
-
-                {/* Experience */}
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  <span className="text-gray-700">{instructor.experience}+ Years Experience</span>
-                </div>
-
-                {/* Specialization */}
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="text-gray-700">Swing Analysis Specialist</span>
-                </div>
-
-                {/* PGA Certified */}
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  <span className="text-gray-700">PGA Certified</span>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t my-4"></div>
-
-                {/* Price */}
-                <div>
-                  <div className="text-gray-600 mb-1">Price:</div>
-                  <div className="text-2xl font-bold">${instructor.services[0]?.price || 0} / Hr</div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t my-4"></div>
-
-                {/* Contact Details */}
-                <div>
-                  <h3 className="text-xl font-semibold mb-4">Contact Details</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center">
-                      <Mail className="w-5 h-5 mr-3 text-gray-500" />
-                      <a href={`mailto:${instructor.contact_info.email}`} className="text-gray-600 hover:text-blue-600">
-                        {instructor.contact_info.email}
-                      </a>
-                    </div>
-                    <div className="flex items-center">
-                      <Phone className="w-5 h-5 mr-3 text-gray-500" />
-                      <a href={`tel:${instructor.contact_info.phone}`} className="text-gray-600 hover:text-blue-600">
-                        {instructor.contact_info.phone}
-                      </a>
-                    </div>
-                    {instructor.contact_info.website && (
-                      <div className="flex items-center">
-                        <Globe className="w-5 h-5 mr-3 text-gray-500" />
-                        <a href={`https://${instructor.contact_info.website}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {instructor.contact_info.website}
-                        </a>
+                    {/* Experience */}
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-golf-blue" />
+                        <span className="font-medium">{instructor.experience}+ Years Experience</span>
                       </div>
-                    )}
-                    <div className="flex items-center">
-                      <Instagram className="w-5 h-5 mr-3 text-gray-500" />
-                      <a href="https://instagram.com/john_doe34" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600">
-                        john_doe34
-                      </a>
                     </div>
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 mr-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
-                      </svg>
-                      <a href="https://youtube.com/@BirdieHacks" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600">
-                        @BirdieHacks
-                      </a>
+
+                    {/* Certifications */}
+                    {instructor.certifications.map((cert, index) => (
+                      <div key={index} className="mb-4">
+                        <div className="flex items-center gap-2">
+                          <Award className="w-5 h-5 text-golf-blue" />
+                          <span className="font-medium">{cert}</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Price */}
+                    <div className="border-t border-b py-4 my-6">
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-900 font-medium">Price:</span>
+                        <span className="text-golf-blue font-bold text-xl">100$ / Hr</span>
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <svg className="w-5 h-5 mr-3 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                      <a href="https://facebook.com/SwingSavy_34" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600">
-                        SwingSavy_34
-                      </a>
+
+                    {/* Contact Details */}
+                    <div className="space-y-4">
+                      <h3 className="text-xl font-bold">Contact Details</h3>
+                      
+                      {instructor.contact_info.email && (
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 text-golf-blue" />
+                          <a 
+                            href={`mailto:${instructor.contact_info.email}`}
+                            className="text-gray-700 hover:text-golf-blue"
+                            onClick={() => trackContactClick('email')}
+                          >
+                            {instructor.contact_info.email}
+                          </a>
+                        </div>
+                      )}
+                      
+                      {instructor.contact_info.phone && (
+                        <div className="flex items-center gap-3">
+                          <Phone className="w-5 h-5 text-golf-blue" />
+                          <a 
+                            href={`tel:${instructor.contact_info.phone}`}
+                            className="text-gray-700 hover:text-golf-blue"
+                            onClick={() => trackContactClick('phone')}
+                          >
+                            {instructor.contact_info.phone}
+                          </a>
+                        </div>
+                      )}
+                      
+                      {instructor.contact_info.website && (
+                        <div className="flex items-center gap-3">
+                          <Globe className="w-5 h-5 text-golf-blue" />
+                          <a 
+                            href={instructor.contact_info.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-700 hover:text-golf-blue"
+                            onClick={() => trackContactClick('website')}
+                          >
+                            {instructor.contact_info.website}
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Social Media Links */}
+                      {(instructor.contact_info.instagram || 
+                        instructor.contact_info.youtube || 
+                        instructor.contact_info.facebook) && (
+                        <div className="pt-4 mt-4 border-t">
+                          {instructor.contact_info.instagram && (
+                            <div className="flex items-center gap-3 mb-3">
+                              <Instagram className="w-5 h-5 text-golf-blue" />
+                              <a 
+                                href={`https://instagram.com/${instructor.contact_info.instagram}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-700 hover:text-golf-blue"
+                                onClick={() => trackContactClick('instagram')}
+                              >
+                                {instructor.contact_info.instagram}
+                              </a>
+                            </div>
+                          )}
+                          {instructor.contact_info.youtube && (
+                            <div className="flex items-center gap-3 mb-3">
+                              <Youtube className="w-5 h-5 text-golf-blue" />
+                              <a 
+                                href={`https://youtube.com/${instructor.contact_info.youtube}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-700 hover:text-golf-blue"
+                                onClick={() => trackContactClick('youtube')}
+                              >
+                                {instructor.contact_info.youtube}
+                              </a>
+                            </div>
+                          )}
+                          {instructor.contact_info.facebook && (
+                            <div className="flex items-center gap-3">
+                              <Facebook className="w-5 h-5 text-golf-blue" />
+                              <a 
+                                href={`https://facebook.com/${instructor.contact_info.facebook}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gray-700 hover:text-golf-blue"
+                                onClick={() => trackContactClick('facebook')}
+                              >
+                                {instructor.contact_info.facebook}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* Book Now Button */}
-            <button className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">
-              Book a Lesson
-            </button>
-          </div>
-        </div>
+          </>
+        ) : null}
       </main>
       
       <Footer />

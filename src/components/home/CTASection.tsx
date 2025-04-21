@@ -10,14 +10,14 @@ const CTASection = () => {
       <div className="cta-content">
         <div className="cta-text-container">
           <h2 className="cta-title">
-            Share Your Golf Expertise – Become an<br />
-            Instructor Today!
+            Share Your Golf Expertise – 
+            Become an Instructor Today!
           </h2>
           <p className="cta-subtitle">
-            Connect with students, grow your coaching business, and<br />
+            Connect with students, grow your coaching business, and
             inspire the next generation of golfers.
           </p>
-          <Link to="/join">
+          <Link to="/join-instructor">
             <Button className="cta-button">
               Join as Instructor
             </Button>

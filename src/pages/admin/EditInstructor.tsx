@@ -1,138 +1,97 @@
 import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminHeader from '@/components/admin/AdminHeader';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import InstructorForm from '@/components/instructors/InstructorForm';
+import LoadingErrorState from '@/components/admin/LoadingErrorState';
 import { InstructorFormValues } from '@/types/instructor';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, testSupabaseConnection } from '@/integrations/supabase/client';
+import { transformToFormValues } from '@/utils/instructorFormTransformer';
 import { toast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { uploadPhoto, uploadPhotos } from '@/utils/photoUpload';
 
-const EditInstructor = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+interface EditInstructorProps {
+  instructorId: string;
+  onCancel?: () => void;
+}
+
+const EditInstructor: React.FC<EditInstructorProps> = ({ 
+  instructorId, 
+  onCancel 
+}): JSX.Element => {
+  const queryClient = useQueryClient();
   
-  const { data: instructor, isLoading } = useQuery({
-    queryKey: ['instructor', id],
+  const { data: instructor, isLoading, error } = useQuery({
+    queryKey: ['instructor', instructorId],
     queryFn: async () => {
-      if (!id) throw new Error('Instructor ID is required');
-      
       const { data, error } = await supabase
         .from('instructors')
-        .select('*')
-        .eq('id', id)
+        .select(`
+          *,
+          contact_info,
+          services,
+          specialties,
+          certifications,
+          photos,
+          faqs
+        `)
+        .eq('id', instructorId)
         .single();
       
       if (error) throw error;
+      console.log('Fetched instructor data:', data);
       return data;
     }
   });
 
-  const transformToFormValues = (instructorData: any): InstructorFormValues => {
-    if (!instructorData) return {} as InstructorFormValues;
-    
-    const nameParts = instructorData.name.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
-    const contactInfo = instructorData.contact_info || {};
-    
-    const services: any = {};
-    if (instructorData.services) {
-      Object.entries(instructorData.services).forEach(([key, value]: [string, any]) => {
-        services[key] = value;
-      });
-    }
-    
-    const certifications = {
-      pga: instructorData.certifications?.includes('PGA') || false,
-      lpga: instructorData.certifications?.includes('LPGA') || false,
-      tpi: instructorData.certifications?.includes('TPI') || false,
-      other: false,
-      otherText: '',
-    };
-    
-    instructorData.certifications?.forEach((cert: string) => {
-      if (!['PGA', 'LPGA', 'TPI'].includes(cert)) {
-        certifications.other = true;
-        certifications.otherText = cert;
-      }
-    });
-    
-    const specialties = {
-      shortGame: instructorData.specialties?.includes('Short Game') || false,
-      putting: instructorData.specialties?.includes('Putting') || false,
-      driving: instructorData.specialties?.includes('Driving') || false,
-      courseStrategy: instructorData.specialties?.includes('Course Strategy') || false,
-      mentalApproach: instructorData.specialties?.includes('Mental Approach') || false,
-      beginnerLessons: instructorData.specialties?.includes('Beginner Lessons') || false,
-      advancedTraining: instructorData.specialties?.includes('Advanced Training') || false,
-      juniorCoaching: instructorData.specialties?.includes('Junior Coaching') || false,
-    };
-    
-    const lessonTypes = {
-      privateLesson: !!services.privateLesson,
-      groupLessons: !!services.groupLessons,
-      onlineCoaching: !!services.onlineCoaching,
-      oncourseInstruction: !!services.oncourseInstruction,
-    };
-    
-    const faqs: any = { customFaqs: [] };
-    if (instructorData.faqs) {
-      instructorData.faqs.forEach((faq: any) => {
-        if (faq.question.includes('equipment')) {
-          faqs.equipment = faq.answer;
-        } else if (faq.question.includes('lessons')) {
-          faqs.numberOfLessons = faq.answer;
-        } else if (faq.question.includes('packages')) {
-          faqs.packages = faq.answer;
-        } else {
-          faqs.customFaqs = [...(faqs.customFaqs || []), faq];
-        }
-      });
-    }
-    
-    return {
-      firstName,
-      lastName,
-      email: contactInfo.email || '',
-      phone: contactInfo.phone || '',
-      website: contactInfo.website || '',
-      experience: instructorData.experience || 0,
-      location: instructorData.location || '',
-      tagline: instructorData.tagline || '',
-      specialization: instructorData.specialization || '',
-      bio: instructorData.bio || '',
-      additionalBio: instructorData.additional_bio || '',
-      certifications,
-      lessonTypes,
-      services,
-      specialties,
-      faqs,
-      profilePhoto: null,
-      additionalPhotos: null,
-    };
-  };
-
   const handleSubmit = async (data: InstructorFormValues) => {
     try {
-      const fullName = `${data.firstName} ${data.lastName}`.trim();
+      // Test connection first
+      const { success, error: connError } = await testSupabaseConnection();
+      if (!success) {
+        throw new Error(`Connection error: ${connError}`);
+      }
+
+      // Handle photo uploads first
+      let photos: string[] = instructor?.photos || [];
       
-      const contactInfo = {
-        email: data.email,
-        phone: data.phone,
-        website: data.website || '',
-      };
+      // Upload profile photo if provided
+      if (data.profilePhoto instanceof File) {
+        const profilePhotoUrl = await uploadPhoto(data.profilePhoto, instructorId);
+        // If there are existing photos, replace the first one (profile photo)
+        // If no photos exist, add as first photo
+        if (photos.length > 0) {
+          photos[0] = profilePhotoUrl;
+        } else {
+          photos = [profilePhotoUrl];
+        }
+      }
       
-      const certifications = [];
+      // Upload additional photos if provided
+      if (data.additionalPhotos && Array.isArray(data.additionalPhotos)) {
+        const additionalPhotoUrls = await Promise.all(
+          data.additionalPhotos
+            .filter((photo): photo is File => photo instanceof File)
+            .map(photo => uploadPhoto(photo, instructorId))
+        );
+        // Append new additional photos to existing ones (after profile photo)
+        if (photos.length > 0) {
+          photos = [...photos.slice(0, 1), ...additionalPhotoUrls, ...photos.slice(1)];
+        } else {
+          photos = additionalPhotoUrls;
+        }
+      }
+
+      // Convert form values to database format
+      // First create arrays from certification checkboxes
+      const certifications: string[] = [];
       if (data.certifications.pga) certifications.push('PGA');
       if (data.certifications.lpga) certifications.push('LPGA');
       if (data.certifications.tpi) certifications.push('TPI');
-      if (data.certifications.other && data.certifications.otherText) {
+      if (data.certifications.other && data.certifications.otherText) 
         certifications.push(data.certifications.otherText);
-      }
-      
-      const specialties = [];
+
+      // Create array of specialties from checkboxes
+      const specialties: string[] = [];
       if (data.specialties.shortGame) specialties.push('Short Game');
       if (data.specialties.putting) specialties.push('Putting');
       if (data.specialties.driving) specialties.push('Driving');
@@ -141,116 +100,109 @@ const EditInstructor = () => {
       if (data.specialties.beginnerLessons) specialties.push('Beginner Lessons');
       if (data.specialties.advancedTraining) specialties.push('Advanced Training');
       if (data.specialties.juniorCoaching) specialties.push('Junior Coaching');
-      
-      const services: any = {};
-      if (data.lessonTypes.privateLesson && data.services.privateLesson) {
-        services.privateLesson = data.services.privateLesson;
-      }
-      if (data.lessonTypes.groupLessons && data.services.groupLessons) {
-        services.groupLessons = data.services.groupLessons;
-      }
-      if (data.lessonTypes.onlineCoaching && data.services.onlineCoaching) {
-        services.onlineCoaching = data.services.onlineCoaching;
-      }
-      if (data.lessonTypes.oncourseInstruction && data.services.oncourseInstruction) {
-        services.oncourseInstruction = data.services.oncourseInstruction;
-      }
-      
-      const faqs = [];
-      if (data.faqs.equipment) {
-        faqs.push({
-          question: 'Do I need to bring my own equipment?',
-          answer: data.faqs.equipment,
+
+      // Transform services into an array format while preserving existing data
+      const existingServices = instructor?.services || [];
+      const updatedServices = Object.entries(data.services || {})
+        .filter(([_, service]) => service && service.price && service.duration)
+        .map(([serviceType, service]) => {
+          // Try to find existing service
+          const existingService = existingServices.find(s => s.title === serviceType);
+          return {
+            title: serviceType,
+            description: service.description || existingService?.description || '',
+            duration: service.duration || existingService?.duration || '',
+            price: parseFloat(service.price) || existingService?.price || 0
+          };
         });
-      }
-      if (data.faqs.numberOfLessons) {
-        faqs.push({
-          question: 'How many lessons will I need?',
-          answer: data.faqs.numberOfLessons,
-        });
-      }
-      if (data.faqs.packages) {
-        faqs.push({
-          question: 'Do you offer packages?',
-          answer: data.faqs.packages,
-        });
-      }
-      if (data.faqs.customFaqs && data.faqs.customFaqs.length > 0) {
-        faqs.push(...data.faqs.customFaqs);
-      }
-      
-      let photos = instructor?.photos || [];
-      
-      const { error } = await supabase
+
+      // Parse location data
+      const locationParts = data.location.split(', ');
+      const cityName = locationParts[0] || instructor?.city || '';
+      const stateName = locationParts[1] || instructor?.state || '';
+
+      // Prepare update data preserving existing fields
+      const updateData = {
+        first_name: data.firstName || instructor?.first_name,
+        last_name: data.lastName || instructor?.last_name,
+        name: `${data.firstName} ${data.lastName}`.trim() || instructor?.name,
+        location: data.location || instructor?.location,
+        city: cityName,
+        state: stateName,
+        country: 'US', // Default to US for now
+        specialization: data.specialization || instructor?.specialization,
+        experience: data.experience || instructor?.experience,
+        bio: data.bio || instructor?.bio,
+        certifications: certifications.length > 0 ? certifications : instructor?.certifications,
+        specialties: specialties.length > 0 ? specialties : instructor?.specialties,
+        services: updatedServices.length > 0 ? updatedServices : instructor?.services,
+        contact_info: {
+          email: data.email || instructor?.contact_info?.email,
+          phone: data.phone || instructor?.contact_info?.phone,
+          website: data.website || instructor?.contact_info?.website
+        },
+        photos: photos.length > 0 ? photos : instructor?.photos,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
         .from('instructors')
-        .update({
-          name: fullName,
-          location: data.location,
-          tagline: data.tagline || '',
-          experience: data.experience,
-          specialization: data.specialization,
-          certifications,
-          bio: data.bio,
-          additional_bio: data.additionalBio || '',
-          specialties,
-          services,
-          faqs,
-          contact_info: contactInfo,
-          photos,
-          highlights: instructor?.highlights || [],
-        })
-        .eq('id', id);
+        .update(updateData)
+        .eq('id', instructorId);
       
-      if (error) throw error;
+      if (updateError) {
+        console.error('Supabase update error:', updateError);
+        throw updateError;
+      }
       
       toast({
         title: 'Instructor Updated',
-        description: 'The instructor profile has been updated successfully.',
+        description: 'The instructor has been updated successfully.',
       });
       
-      navigate('/admin/instructors');
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['instructor', instructorId] });
+      queryClient.invalidateQueries({ queryKey: ['instructors'] });
+      queryClient.invalidateQueries({ queryKey: ['public-instructors'] });
+      
+      if (onCancel) onCancel();
     } catch (err) {
       console.error('Error updating instructor:', err);
       toast({
         title: 'Error',
-        description: 'Failed to update instructor profile.',
+        description: err instanceof Error ? err.message : 'Failed to update instructor. Please check your connection and try again.',
         variant: 'destructive',
       });
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <AdminSidebar />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader />
-        
-        <main className="flex-1 overflow-y-auto p-6">
-          <h1 className="text-2xl font-bold mb-6">Edit Instructor</h1>
-          
-          {isLoading ? (
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-golf-blue border-r-transparent"></div>
-              <p className="mt-2">Loading instructor data...</p>
-            </div>
-          ) : instructor ? (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <InstructorForm 
-                onSubmit={handleSubmit} 
-                isAdmin={true}
-                buttonText="Update Instructor"
-                initialValues={transformToFormValues(instructor)}
-              />
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-md p-6 text-center text-red-500">
-              Instructor not found
-            </div>
-          )}
-        </main>
+    <>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Edit Instructor</h1>
+        {onCancel && (
+          <Button variant="outline" onClick={onCancel}>
+            Cancel
+          </Button>
+        )}
       </div>
-    </div>
+      
+      <LoadingErrorState 
+        isLoading={isLoading} 
+        error={error ? (error as Error).message : undefined}
+      >
+        {instructor && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <InstructorForm 
+              onSubmit={handleSubmit} 
+              isAdmin={true}
+              buttonText="Update Instructor"
+              initialValues={transformToFormValues(instructor)}
+            />
+          </div>
+        )}
+      </LoadingErrorState>
+    </>
   );
 };
 

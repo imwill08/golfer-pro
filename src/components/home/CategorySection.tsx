@@ -3,43 +3,31 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import './CategorySection.css';
 
-// Category data
+// Updated category data with more relevant images and proper filter query params
 const categories = [
   {
-    id: 'in-person',
-    title: 'In Person Lessons',
-    image: '/images/in-person-lessons.jpg',
-    path: '/instructors?category=in-person'
+    id: 'private',
+    title: 'Private Lessons',
+    image: '/images/private-lesson.jpg',
+    path: '/instructors?lessonType=private'
   },
   {
     id: 'online',
-    title: 'Online Lessons',
-    image: '/images/online-lessons.jpg',
-    path: '/instructors?category=online'
+    title: 'Online Coaching',
+    image: '/images/online-coaching.jpg',
+    path: '/instructors?lessonType=online'
   },
   {
-    id: 'academy',
-    title: 'Golf Academy',
-    image: '/images/golf-academy.jpg',
-    path: '/instructors?category=academy'
+    id: 'group',
+    title: 'Group Lessons',
+    image: '/images/group-lesson.jpg',
+    path: '/instructors?lessonType=group'
   },
   {
-    id: 'competitive',
-    title: 'Competitive Golf Training',
-    image: '/images/competitive-training.jpg',
-    path: '/instructors?category=competitive'
-  },
-  {
-    id: 'advanced',
-    title: 'Advanced Training',
-    image: '/images/advanced-training.jpg',
-    path: '/instructors?category=advanced'
-  },
-  {
-    id: 'womens',
-    title: 'Women\'s Golf Lessons',
-    image: '/images/womens-golf.jpg',
-    path: '/instructors?category=womens'
+    id: 'oncourse',
+    title: 'On-Course Instruction',
+    image: '/images/on-course-lesson.jpg',
+    path: '/instructors?lessonType=oncourse'
   }
 ];
 
@@ -63,7 +51,13 @@ const CategorySection = () => {
                 alt={category.title} 
                 className="category-image"
                 onError={(e) => {
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop';
+                  const fallbackImages = {
+                    'private': 'https://images.unsplash.com/photo-1535132011086-b8818f016104?q=80&w=2070&auto=format&fit=crop',
+                    'online': 'https://images.unsplash.com/photo-1591285713698-598d587de63e?q=80&w=2070&auto=format&fit=crop',
+                    'group': 'https://images.unsplash.com/photo-1540539234-c14a20fb7c7b?q=80&w=2070&auto=format&fit=crop',
+                    'oncourse': 'https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?q=80&w=2070&auto=format&fit=crop'
+                  };
+                  e.currentTarget.src = fallbackImages[category.id] || 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop';
                 }}
               />
             </div>

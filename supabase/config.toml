@@ -1,1 +1,14 @@
-project_id = "jdeeemmypanndsjikxbk"
+
+# This is an example config file for the Supabase CLI
+# The values defined here are the default values
+
+[auth]
+# The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
+# in emails.
+site_url = "https://c43f6115-b5bb-4f5c-8ad5-b9cd3c02e0e6.lovableproject.com"
+# A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
+additional_redirect_urls = [
+  "https://c43f6115-b5bb-4f5c-8ad5-b9cd3c02e0e6.lovableproject.com/admin", 
+  "https://c43f6115-b5bb-4f5c-8ad5-b9cd3c02e0e6.lovableproject.com/admin/instructors",
+  "https://c43f6115-b5bb-4f5c-8ad5-b9cd3c02e0e6.lovableproject.com/admin/login"
+]

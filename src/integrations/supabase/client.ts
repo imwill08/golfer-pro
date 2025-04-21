@@ -2,10 +2,42 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://jdeeemmypanndsjikxbk.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpkZWVlbW15cGFubmRzamlreGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5MTkyOTQsImV4cCI6MjA1OTQ5NTI5NH0.XE78bpQJTeoSrF_UBCaivSXGBoT-5Q3zH3PCn5AHCJA";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Create client with automatic retries and error handling
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  },
+  global: {
+    headers: {
+      'x-application-name': 'golf-pro-finder'
+    }
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 2
+    }
+  }
+});
+
+// Test connection helper
+export const testSupabaseConnection = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Supabase connection test failed:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Failed to connect to Supabase'
+    };
+  }
+};
