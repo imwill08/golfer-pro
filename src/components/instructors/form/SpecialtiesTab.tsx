@@ -1,12 +1,16 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { TabsContent } from '@/components/ui/tabs';
 import { UseFormReturn } from 'react-hook-form';
 import { InstructorFormValues } from '@/types/instructor';
+import { Card, CardContent } from '@/components/ui/card';
+import { X, Plus } from 'lucide-react';
+import { useFormContext } from 'react-hook-form';
+import { Label } from '@/components/ui/label';
 
 interface SpecialtiesTabProps {
   form: UseFormReturn<InstructorFormValues>;
@@ -15,6 +19,22 @@ interface SpecialtiesTabProps {
 }
 
 export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab, onTabChange }) => {
+  const { register, watch, setValue } = useFormContext<InstructorFormValues>();
+  const faqs = watch('faqs') || [];
+
+  const addFaq = () => {
+    const currentFaqs = Array.isArray(faqs) ? faqs : [];
+    setValue('faqs', [...currentFaqs, { question: '', answer: '' }]);
+  };
+
+  const removeFaq = (index: number) => {
+    const currentFaqs = Array.isArray(faqs) ? faqs : [];
+    setValue(
+      'faqs',
+      currentFaqs.filter((_, i) => i !== index)
+    );
+  };
+
   return (
     <TabsContent value="specialties" className="space-y-6 mt-6">
       <div className="space-y-4">
@@ -26,7 +46,7 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.shortGame"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center space-x-2"> 
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
@@ -152,65 +172,45 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
         </div>
       </div>
       
-      <div className="space-y-4 mt-8">
-        <h3 className="text-lg font-medium">Frequently Asked Questions</h3>
-        <p className="text-sm text-gray-500">Help potential clients understand what to expect when working with you.</p>
+      <div className="space-y-4">
+        <h3 className="text-lg font-medium">FAQs</h3>
         
-        <FormField
-          control={form.control}
-          name="faqs.equipment"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Do students need to bring their own equipment?</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Yes, please bring your own clubs. However, I can provide equipment for beginners if needed." 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="faqs.numberOfLessons"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>How many lessons will students typically need?</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="It varies based on your goals and current skill level. Most students see significant improvement after 3-5 lessons." 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="faqs.packages"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Do you offer lesson packages or discounts?</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Yes, I offer package discounts for multiple lessons. A 5-lesson package includes a 10% discount from the individual lesson price." 
-                  {...field} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <Card className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Frequently Asked Questions</h3>
+            <Button type="button" onClick={addFaq} variant="outline">
+              Add FAQ
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            {faqs.map((_, index) => (
+              <div key={index} className="space-y-2 p-4 border rounded-lg">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 space-y-2">
+                    <Label>Question</Label>
+                    <Input {...register(`faqs.${index}.question`)} placeholder="Enter question" />
+                    <Label>Answer</Label>
+                    <Textarea {...register(`faqs.${index}.answer`)} placeholder="Enter answer" />
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => removeFaq(index)}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
       
       <div className="flex justify-between mt-8">
-        <Button type="button" variant="outline" onClick={() => onTabChange("services")}>
-          Previous: Services
+        <Button type="button" variant="outline" onClick={() => onTabChange("lesson_types")}>
+          Previous: Lesson Types
         </Button>
         <Button type="button" onClick={() => onTabChange("photos")}>
           Next: Photos

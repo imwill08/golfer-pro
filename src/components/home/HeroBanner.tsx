@@ -138,7 +138,7 @@ const HeroBanner = () => {
       setZipError(validation.error || 'Invalid zip code');
       toast.error(validation.error || 'Please enter a valid zip code');
       return;
-    } 
+    }
 
     // Validate radius
     const radiusNum = parseInt(radius);

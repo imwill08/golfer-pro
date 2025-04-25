@@ -60,7 +60,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose }) => {
       )}
 
       <div className="p-6 mb-6">
-        <Link to="/" className="text-white text-2xl font-bold">LOGO</Link>
+        <Link to="/" className="flex items-center gap-2">
+          <div className="grid grid-cols-3 grid-rows-3 gap-1">
+            {[...Array(9)].map((_, i) => (
+              <div
+                key={i}
+                className="w-2 h-2 bg-primary rounded-full animate-pulse"
+                style={{ animationDelay: `${i * 0.1}s` }}
+              />
+            ))}
+          </div>
+          <span className="text-xl font-bold text-white">GolfPro Connect</span>
+        </Link>
       </div>
       
       <nav className="flex-1">

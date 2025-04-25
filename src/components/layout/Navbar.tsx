@@ -1,10 +1,37 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+
+  const isActivePath = (path: string) => {
+    if (path === '/') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
+  const getLinkClasses = (path: string) => {
+    return cn(
+      "text-base transition-colors",
+      isActivePath(path)
+        ? "text-primary font-medium"
+        : "text-gray-600 hover:text-gray-900"
+    );
+  };
+
+  const getMobileLinkClasses = (path: string) => {
+    return cn(
+      "block px-3 py-2 rounded-md text-base font-medium transition-colors",
+      isActivePath(path)
+        ? "text-primary bg-primary/5"
+        : "text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+    );
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white z-50 border-b border-gray-100">
@@ -28,19 +55,19 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-8">
             <Link 
               to="/" 
-              className="text-base text-gray-600 hover:text-gray-900 transition-colors"
+              className={getLinkClasses('/')}
             >
               Home
             </Link>
             <Link 
               to="/instructors" 
-              className="text-base text-gray-600 hover:text-gray-900 transition-colors"
+              className={getLinkClasses('/instructors')}
             >
               Find Instructors
             </Link>
             <Link 
               to="/admin/login" 
-              className="text-base font-medium text-gray-900 hover:text-gray-700 transition-colors"
+              className={getLinkClasses('/admin')}
             >
               Admin Login
             </Link>
@@ -67,21 +94,21 @@ const Navbar = () => {
             <div className="px-2 pt-2 pb-3 space-y-1 border-t">
               <Link 
                 to="/" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                className={getMobileLinkClasses('/')}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Home
               </Link>
               <Link 
                 to="/instructors" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                className={getMobileLinkClasses('/instructors')}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Find Instructors
               </Link>
               <Link 
                 to="/admin/login" 
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:text-gray-700 hover:bg-gray-50"
+                className={getMobileLinkClasses('/admin')}
                 onClick={() => setIsMenuOpen(false)}
               >
                 Admin Login

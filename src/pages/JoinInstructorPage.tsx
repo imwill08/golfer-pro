@@ -16,14 +16,29 @@ const JoinInstructorPage = () => {
         email: data.email
       });
       
-      await handleInstructorFormSubmit(data);
+      await handleInstructorFormSubmit(data, false);
+      
+      toast({
+        title: 'Application Submitted',
+        description: 'Your application has been submitted successfully. We will review it and get back to you soon.',
+      });
     } catch (error) {
       console.error('Error in form submission:', error);
-      toast({
-        title: 'Error',
-        description: 'An unexpected error occurred. Please try again.',
-        variant: 'destructive',
-      });
+      
+      // Show more specific error message for duplicate email
+      if (error instanceof Error && error.message.includes('email address already exists')) {
+        toast({
+          title: 'Email Already Registered',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred. Please try again.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -37,14 +52,14 @@ const JoinInstructorPage = () => {
             <div className="text-center mb-10">
               <h1 className="text-3xl font-bold mb-4">Share Your Expertise: Join Our Golf Instructor Network</h1>
               <p className="text-gray-600 mb-6">
-                Complete the form below to apply as a golf instructor. Our admin team will review your application and get back to you within 48 hours.
+                Complete the form below to apply as a golf instructor.
               </p>
               
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start mx-auto max-w-2xl">
                 <AlertCircle size={20} className="text-blue-500 mr-3 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-blue-700 text-left">
                   <p className="font-medium">Application Process:</p>
-                  <p>Your profile will be reviewed by our admin team before being published. We'll notify you via email once your application has been approved.</p>
+                  <p>Your profile will be reviewed by our admin team before being published. Your application will be processed within 72 hours.</p>
                 </div>
               </div>
             </div>

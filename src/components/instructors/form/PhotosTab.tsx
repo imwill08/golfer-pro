@@ -29,6 +29,11 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
   handleAdditionalPhotosChange,
   removeAdditionalPhoto
 }) => {
+  // Existing profile photo from the database
+  const existingProfilePhoto = form.watch('photos')?.[0] || null;
+  // Existing gallery photos from the database
+  const existingGalleryPhotos = form.watch('gallery_photos') || [];
+
   return (
     <TabsContent value="photos" className="space-y-8 mt-6">
       <div className="grid md:grid-cols-2 gap-8">
@@ -37,7 +42,9 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-foreground">Profile Photo</h3>
-              <p className="text-sm text-muted-foreground">Upload a professional photo of yourself</p>
+              <p className="text-sm text-muted-foreground">
+                Upload a professional photo of yourself (saved to <code>photos</code> field)
+              </p>
             </div>
             {profilePhotoPreview && (
               <Button
@@ -56,7 +63,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
             <div className={cn(
               "aspect-square w-full max-w-md mx-auto border-2 border-dashed rounded-xl overflow-hidden transition-all duration-200",
               "hover:border-primary/50 focus-within:border-primary/50",
-              profilePhotoPreview ? "border-muted" : "border-muted/50"
+              (profilePhotoPreview || existingProfilePhoto) ? "border-muted" : "border-muted/50"
             )}>
               <label 
                 htmlFor="profile-photo"
@@ -66,6 +73,12 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
                   <img 
                     src={profilePhotoPreview} 
                     alt="Profile preview" 
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  />
+                ) : existingProfilePhoto ? (
+                  <img 
+                    src={existingProfilePhoto} 
+                    alt="Existing profile photo" 
                     className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                   />
                 ) : (
@@ -107,14 +120,16 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
         <section className="space-y-4">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Gallery Photos</h3>
-            <p className="text-sm text-muted-foreground">Upload photos of you teaching or in action</p>
+            <p className="text-sm text-muted-foreground">
+              Upload photos of you teaching or in action (saved to <code>gallery_photos</code> field)
+            </p>
           </div>
 
           <div className="space-y-4">
             <div className={cn(
               "border-2 border-dashed rounded-xl p-6 transition-all duration-200",
               "hover:border-primary/50 focus-within:border-primary/50",
-              additionalPhotos.length > 0 ? "border-muted" : "border-muted/50"
+              (additionalPhotos.length > 0 || existingGalleryPhotos.length > 0) ? "border-muted" : "border-muted/50"
             )}>
               <Label 
                 htmlFor="gallery-photos" 
@@ -122,7 +137,9 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
               >
                 <Upload className="w-10 h-10 mb-4 text-muted-foreground" />
                 <p className="text-sm font-medium text-foreground mb-1">
-                  {additionalPhotos.length > 0 ? 'Add more photos' : 'Upload gallery photos'}
+                  {(additionalPhotos.length > 0 || existingGalleryPhotos.length > 0) 
+                    ? 'Add more gallery photos' 
+                    : 'Upload gallery photos'}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Drag and drop or click to select
@@ -139,30 +156,55 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
               </Label>
             </div>
 
+            {/* Display new selected photos */}
             {additionalPhotos.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {additionalPhotos.map((photo, index) => (
-                  <div 
-                    key={index} 
-                    className="group relative aspect-square rounded-lg overflow-hidden border border-muted"
-                  >
-                    <img 
-                      src={photo} 
-                      alt={`Gallery photo ${index + 1}`} 
-                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <button 
-                        type="button"
-                        onClick={() => removeAdditionalPhoto(index)}
-                        className="absolute top-2 right-2 p-1.5 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-colors"
-                        aria-label={`Remove gallery photo ${index + 1}`}
-                      >
-                        <Trash2 className="w-4 h-4 text-white" />
-                      </button>
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">New photos to upload:</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {additionalPhotos.map((photo, index) => (
+                    <div 
+                      key={`new-${index}`} 
+                      className="group relative aspect-square rounded-lg overflow-hidden border border-muted"
+                    >
+                      <img 
+                        src={photo} 
+                        alt={`New gallery photo ${index + 1}`} 
+                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <button 
+                          type="button"
+                          onClick={() => removeAdditionalPhoto(index)}
+                          className="absolute top-2 right-2 p-1.5 bg-white/10 backdrop-blur-sm rounded-full hover:bg-white/20 transition-colors"
+                          aria-label={`Remove gallery photo ${index + 1}`}
+                        >
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Display existing gallery photos */}
+            {existingGalleryPhotos.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Existing gallery photos:</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {existingGalleryPhotos.map((photo, index) => (
+                    <div 
+                      key={`existing-${index}`} 
+                      className="group relative aspect-square rounded-lg overflow-hidden border border-muted"
+                    >
+                      <img 
+                        src={photo} 
+                        alt={`Existing gallery photo ${index + 1}`} 
+                        className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

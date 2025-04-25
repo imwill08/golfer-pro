@@ -69,7 +69,8 @@ const Instructors = () => {
         setIsLoading(true);
         const { data, error } = await supabase
           .from('instructors')
-          .select('*');
+          .select('*')
+          .eq('status', 'approved');
 
         if (error) throw error;
 
@@ -86,19 +87,19 @@ const Instructors = () => {
     fetchInstructors();
   }, []);
 
-  // Filter and sort instructors by distance
+  // Filter and sort instructors by distance if search location exists
   const filteredInstructors = useMemo(() => {
-    if (!searchLocation || !instructors.length) {
-      console.log('No search location or instructors to filter');
-      return [];
+    if (!instructors.length) return [];
+    
+    // If no search location, return all instructors
+    if (!searchLocation) {
+      return instructors;
     }
 
-    console.log('Filtering instructors with params:', searchLocation);
-
+    // Apply location-based filtering
     const filtered = instructors
       .map(instructor => {
         if (!instructor.latitude || !instructor.longitude) {
-          console.warn('Instructor missing coordinates:', instructor.id);
           return null;
         }
 
@@ -111,15 +112,10 @@ const Instructors = () => {
       })
       .filter((instructor): instructor is (Instructor & { distance: number }) => {
         if (!instructor) return false;
-        const withinRadius = instructor.distance <= searchLocation.radius;
-        if (!withinRadius) {
-          console.log(`Instructor ${instructor.id} outside radius:`, instructor.distance.toFixed(2), 'km');
-        }
-        return withinRadius;
+        return instructor.distance <= searchLocation.radius;
       })
       .sort((a, b) => a.distance - b.distance);
 
-    console.log('Filtered instructors:', filtered.length);
     return filtered;
   }, [instructors, searchLocation]);
 
@@ -152,57 +148,48 @@ const Instructors = () => {
     );
   }
 
-  if (!searchLocation) {
-    return (
-      <div>
-        <Navbar />
-        <div className="container mx-auto p-4 min-h-screen">
-          <h1 className="text-2xl font-bold mb-4">No search criteria specified</h1>
-          <p>Please try searching from the home page.</p>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
   return (
     <div>
       <Navbar />
       <div className="container mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">
-          Golf Instructors near {searchLocation.latitude}, {searchLocation.longitude}
+          {searchLocation 
+            ? `Golf Instructors near ${searchLocation.latitude}, ${searchLocation.longitude}`
+            : 'All Golf Instructors'}
         </h1>
         
-        <div className="text-sm text-gray-600 mb-6">
-          Showing {filteredInstructors.length} instructor{filteredInstructors.length !== 1 ? 's' : ''} within {searchLocation.radius}km
-          {instructors.length > filteredInstructors.length && (
-            <div className="text-xs text-gray-500 mt-1">
-              <p>
-                {instructors.length - filteredInstructors.length} instructor{instructors.length - filteredInstructors.length !== 1 ? 's' : ''} excluded:
-              </p>
-              <ul className="list-disc list-inside ml-2">
-                {instructors.some(i => !i.latitude || !i.longitude) && (
-                  <li>Missing location data</li>
-                )}
-                {instructors.some(i => {
-                  if (!i.latitude || !i.longitude) return false;
-                  const distance = calculateDistance(searchLocation, {
-                    latitude: Number(i.latitude),
-                    longitude: Number(i.longitude)
-                  });
-                  return distance > searchLocation.radius;
-                }) && (
-                  <li>Outside {searchLocation.radius}km radius</li>
-                )}
-              </ul>
-            </div>
-          )}
-        </div>
+        {searchLocation && (
+          <div className="text-sm text-gray-600 mb-6">
+            Showing {filteredInstructors.length} instructor{filteredInstructors.length !== 1 ? 's' : ''} within {searchLocation.radius}km
+            {instructors.length > filteredInstructors.length && (
+              <div className="text-xs text-gray-500 mt-1">
+                <p>
+                  {instructors.length - filteredInstructors.length} instructor{instructors.length - filteredInstructors.length !== 1 ? 's' : ''} excluded:
+                </p>
+                <ul className="list-disc list-inside ml-2">
+                  {instructors.some(i => !i.latitude || !i.longitude) && (
+                    <li>Missing location data</li>
+                  )}
+                  {instructors.some(i => {
+                    if (!i.latitude || !i.longitude) return false;
+                    const distance = calculateDistance(searchLocation, {
+                      latitude: Number(i.latitude),
+                      longitude: Number(i.longitude)
+                    });
+                    return distance > searchLocation.radius;
+                  }) && (
+                    <li>Outside {searchLocation.radius}km radius</li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredInstructors.length > 0 ? (
             filteredInstructors.map((instructor) => {
-              const distance = instructor.distance;
+              const distance = 'distance' in instructor ? (instructor as any).distance as number : null;
               
               return (
                 <Card key={instructor.id} className="hover:shadow-lg transition-shadow">
@@ -211,9 +198,11 @@ const Instructors = () => {
                       <div>
                         <h3 className="text-lg font-semibold">{instructor.name}</h3>
                         <p className="text-sm text-gray-600">{instructor.location}</p>
-                        <p className="text-xs text-gray-500">
-                          {Math.round(distance * 10) / 10}km away
-                        </p>
+                        {distance !== null && (
+                          <p className="text-xs text-gray-500">
+                            {Math.round(distance * 10) / 10}km away
+                          </p>
+                        )}
                       </div>
                       {instructor.photos?.[0] && (
                         <img 
@@ -239,8 +228,10 @@ const Instructors = () => {
             })
           ) : (
             <div className="col-span-full text-center py-8">
-              <p className="text-gray-600">No instructors found within {searchLocation.radius}km of this location.</p>
-              <p className="text-sm text-gray-500 mt-2">Try increasing your search radius or searching in a different area.</p>
+              <p className="text-gray-600">No instructors found{searchLocation ? ` within ${searchLocation.radius}km of this location` : ''}.</p>
+              {searchLocation && (
+                <p className="text-sm text-gray-500 mt-2">Try increasing your search radius or searching in a different area.</p>
+              )}
             </div>
           )}
         </div>

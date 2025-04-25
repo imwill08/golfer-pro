@@ -19,7 +19,12 @@ interface Instructor {
   postal_code: string;
   hourly_rate: number;
   certifications: string[];
-  lesson_types: string[];
+  lesson_types: Array<{
+    price: number;
+    title: string;
+    duration: string;
+    description: string;
+  }>;
 }
 
 interface SearchResultsProps {
@@ -130,7 +135,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               <CardTitle className="space-y-1">
                 <div className="flex items-center justify-between">
                   <h3 className="text-base font-bold line-clamp-1">{instructor.name}</h3>
-                  <span className="text-sm font-semibold text-blue-900">${instructor.hourly_rate}/Hr</span>
+                  <span className="text-sm font-semibold text-blue-900">
+                    {instructor.lesson_types?.[0]?.price 
+                      ? `$${instructor.lesson_types[0].price}/Hr`
+                      : 'Contact for pricing'}
+                  </span>
                 </div>
                 <div className="flex items-center text-gray-600 text-xs mt-0.5">
                   <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
@@ -162,20 +171,47 @@ const SearchResults: React.FC<SearchResultsProps> = ({
               </div>
 
               {/* Lesson Types */}
-              <div className="flex items-center text-gray-600 text-sm">
-                <BookOpen className="w-3 h-3 mr-1.5 flex-shrink-0" />
-                <span className="line-clamp-1">{instructor.lesson_types?.join(' / ') || 'Private Lessons'}</span>
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center text-gray-600 text-sm">
+                  <BookOpen className="w-3 h-3 mr-1.5 flex-shrink-0" />
+                  <span className="font-medium">Lesson Types:</span>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {instructor.lesson_types?.map((lessonType, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="text-xs px-2 py-0.5 flex items-center gap-1 bg-blue-100 hover:bg-blue-200 text-blue-700 border-none"
+                    >
+                      <span>{lessonType.title}</span>
+                      <span className="bg-blue-200 text-blue-800 px-1 rounded">
+                        ${lessonType.price}
+                      </span>
+                    </Badge>
+                  )) || (
+                    <Badge variant="outline" className="text-xs px-2 py-0.5">
+                      No lessons available
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               {/* Certifications */}
               <div className="flex flex-wrap gap-1 mt-2">
                 {instructor.certifications?.slice(0, 2).map((cert, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs px-2 py-0">
+                  <Badge 
+                    key={index} 
+                    variant="secondary" 
+                    className="text-xs px-2 py-0 bg-gray-100 text-gray-700 hover:bg-gray-200 border-none"
+                  >
                     {cert}
                   </Badge>
                 ))}
                 {(instructor.certifications?.length || 0) > 2 && (
-                  <Badge variant="outline" className="text-xs px-2 py-0">
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs px-2 py-0 text-gray-600 border-gray-300"
+                  >
                     +{instructor.certifications!.length - 2} more
                   </Badge>
                 )}

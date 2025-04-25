@@ -11,17 +11,17 @@ const InstructorListItem = ({
   location,
   experience,
   specialization,
-  lessonType,
+  lesson_types,
   priceRange,
   imageUrl,
   specialty,
-  certifications
+  certifications,
+  specialties
 }: InstructorProps) => {
   const navigate = useNavigate();
-  // Convert lessonType to array if it's a string
-  const lessonTypes = typeof lessonType === 'string' 
-    ? lessonType.split(' / ') 
-    : Array.isArray(lessonType) ? lessonType : [];
+  
+  // Get lesson type titles for display
+  const lessonTitles = lesson_types?.map(lt => lt.title) || ['No lessons available'];
 
   // Use a fallback image if imageUrl is empty
   const imageSource = imageUrl && imageUrl.trim() !== '' 
@@ -61,8 +61,8 @@ const InstructorListItem = ({
         
         {/* Content Section */}
         <div className="flex-1 p-4 md:p-6 flex flex-col">
-          <div className="flex items-start justify-between gap-4 mb-3">
-            <div className="flex-1 min-w-0">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 sm:items-center">
+            <div>
               <h3 className="text-lg font-semibold line-clamp-1">{name}</h3>
               <div className="flex items-center text-muted-foreground text-sm mt-1">
                 <MapPin size={14} className="mr-1 flex-shrink-0" />
@@ -71,7 +71,7 @@ const InstructorListItem = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
             <div className="flex items-center text-sm text-muted-foreground">
               <Clock size={14} className="mr-2 flex-shrink-0" />
               <span className="line-clamp-1">{experience} Years Experience</span>
@@ -79,39 +79,33 @@ const InstructorListItem = ({
             
             <div className="flex items-center text-sm text-muted-foreground">
               <Award size={14} className="mr-2 flex-shrink-0" />
-              <span className="line-clamp-1">{specialization || specialty || 'Swing Analysis Specialist'}</span>
+              <span className="line-clamp-1">
+                {specialties?.length ? specialties.join(' • ') : 'No specialties listed'}
+              </span>
             </div>
             
-            <div className="flex items-center text-sm text-muted-foreground col-span-1 md:col-span-2">
+            <div className="flex items-center text-sm text-muted-foreground col-span-1 sm:col-span-2">
               <MonitorSmartphone size={14} className="mr-2 flex-shrink-0" />
               <span className="line-clamp-1">
-                {lessonTypes.length > 0 ? lessonTypes.join(' / ') : 'In-Person / Online'}
+                {lessonTitles.join(' / ')}
               </span>
             </div>
           </div>
-          
+
           {certifications && certifications.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {certifications.slice(0, 3).map((cert, index) => (
+            <div className="flex flex-wrap gap-1 mt-4">
+              {certifications.slice(0, 2).map((cert, index) => (
                 <Badge key={index} variant="outline" className="text-xs">
                   {cert}
                 </Badge>
               ))}
-              {certifications.length > 3 && (
+              {certifications.length > 2 && (
                 <Badge variant="outline" className="text-xs">
-                  +{certifications.length - 3} more
+                  +{certifications.length - 2} more
                 </Badge>
               )}
             </div>
           )}
-          
-          <div className="flex items-center justify-end mt-auto pt-4 border-t border-border">
-            <Link to={`/instructors/${id}`} className="view-profile-btn">
-              <Button variant="default">
-                View Profile
-              </Button>
-            </Link>
-          </div>
         </div>
       </div>
     </div>

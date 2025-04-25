@@ -113,7 +113,7 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
           name="specialization"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Specialization <span className="text-red-500">*</span></FormLabel>
+              <FormLabel>Specialties <span className="text-red-500">*</span></FormLabel>
               <FormControl>
                 <Input placeholder="Swing Analysis Specialist" {...field} />
               </FormControl>
@@ -247,8 +247,8 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
         <Button type="button" variant="outline" onClick={() => onTabChange("personal")}>
           Previous: Personal Info
         </Button>
-        <Button type="button" onClick={() => onTabChange("services")}>
-          Next: Services
+        <Button type="button" onClick={() => onTabChange("lesson_types")}>
+          Next: Lesson Types
         </Button>
       </div>
     </TabsContent>

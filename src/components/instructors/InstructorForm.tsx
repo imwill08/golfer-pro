@@ -9,7 +9,7 @@ import { useFormValidation } from './form/useFormValidation';
 import { FormTabs } from './form/FormTabs';
 import { PersonalInfoTab } from './form/PersonalInfoTab';
 import { ProfessionalInfoTab } from './form/ProfessionalInfoTab';
-import { ServicesTab } from './form/ServicesTab';
+import { LessonTypesTab } from './form/LessonTypesTab';
 import { SpecialtiesTab } from './form/SpecialtiesTab';
 import { PhotosTab } from './form/PhotosTab';
 import { Spinner } from '../ui/spinner';
@@ -43,7 +43,6 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
       phone: '',
       website: '',
       experience: 0,
-      // New location fields with empty defaults
       postalCode: '',
       country: '',
       state: '',
@@ -60,15 +59,7 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
         other: false,
         otherText: ''
       },
-      lessonTypes: {
-        privateLesson: false,
-        groupLessons: false,
-        onlineCoaching: false,
-        oncourseInstruction: false,
-        advancedTraining: false,
-        juniorCoaching: false
-      },
-      services: {},
+      lesson_types: [],
       specialties: {
         shortGame: false,
         putting: false,
@@ -79,7 +70,7 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
         advancedTraining: false,
         juniorCoaching: false
       },
-      faqs: {},
+      faqs: [],
       profilePhoto: null,
       additionalPhotos: null
     }
@@ -170,7 +161,7 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
           <FormTabs activeTab={activeTab} onTabChange={handleTabChange}>
             <PersonalInfoTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
             <ProfessionalInfoTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
-            <ServicesTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
+            <LessonTypesTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
             <SpecialtiesTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
             <PhotosTab 
               form={form} 

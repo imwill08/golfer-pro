@@ -29,15 +29,14 @@ export const formSchema = z.object({
     other: z.boolean(),
     otherText: z.string().optional()
   }),
-  lessonTypes: z.object({
-    privateLesson: z.boolean(),
-    groupLessons: z.boolean(),
-    onlineCoaching: z.boolean(),
-    oncourseInstruction: z.boolean(),
-    advancedTraining: z.boolean(),
-    juniorCoaching: z.boolean()
-  }),
-  services: z.record(z.any()),
+  lesson_types: z.array(
+    z.object({
+      title: z.string().min(1, "Title is required"),
+      description: z.string().min(1, "Description is required"),
+      duration: z.string().min(1, "Duration is required"),
+      price: z.number().min(0, "Price must be a positive number")
+    })
+  ).min(1, "At least one lesson type is required"),
   specialties: z.object({
     shortGame: z.boolean(),
     putting: z.boolean(),
@@ -48,8 +47,14 @@ export const formSchema = z.object({
     advancedTraining: z.boolean(),
     juniorCoaching: z.boolean()
   }),
-  faqs: z.record(z.any()),
+  faqs: z.array(
+    z.object({
+      question: z.string(),
+      answer: z.string()
+    })
+  ).default([]),
   photos: z.array(z.string()).optional(),
+  gallery_photos: z.array(z.string()).optional(),
   profilePhoto: z.any().nullable(),
   additionalPhotos: z.any().nullable()
 });

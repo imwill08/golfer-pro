@@ -3,12 +3,13 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormField, TextAreaField } from '@/components/ui/form-field';
+import { Textarea } from '@/components/ui/textarea';
 import { InstructorDTO } from '@/types/instructor';
 import { FormItem, FormLabel, FormControl } from '@/components/ui/form';
 
@@ -219,16 +220,35 @@ export function InstructorForm({
 }: InstructorFormProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedLessonTypes, setSelectedLessonTypes] = useState<Record<string, boolean>>({
-    individual: false,
-    group: false,
-    junior: false,
-    clinic: false,
-    ...Object.fromEntries((initialData?.lesson_types || []).map(type => [type, true]))
-  });
+  const [lessonTypes, setLessonTypes] = useState<Array<{
+    title: string;
+    description: string;
+    duration: string;
+    price: number;
+  }>>(
+    initialData?.lesson_types?.map(type => {
+      if (typeof type === 'string') {
+        return {
+          title: type,
+          description: `${type} golf lessons`,
+          duration: '60',
+          price: 0
+        };
+      }
+      return type;
+    }) || []
+  );
 
   // Add state for coordinates
   const [coordinates, setCoordinates] = useState<{ latitude: string; longitude: string } | null>(null);
+
+  // Add these state handlers for photos
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState<string | null>(initialData?.photos?.[0] || null);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>(
+    Array.isArray(initialData?.gallery_photos) 
+      ? initialData.gallery_photos.map(photo => typeof photo === 'string' ? photo : '')
+      : []
+  );
 
   // Log initial form data
   useEffect(() => {
@@ -376,18 +396,29 @@ export function InstructorForm({
     setActiveStep(prev => Math.max(prev - 1, 0));
   };
 
-  const handleLessonTypeChange = (type: string, checked: boolean) => {
-    console.log('Lesson type changed:', { type, checked });
-    setSelectedLessonTypes(prev => {
-      const newState = { ...prev, [type]: checked };
-      console.log('New lesson types state:', newState);
-      // Update form data immediately when checkbox changes
-      const newLessonTypes = Object.entries(newState)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([lessonType]) => lessonType);
-      form.setValue('lesson_types', newLessonTypes);
-      return newState;
-    });
+  const addLessonType = () => {
+    setLessonTypes([...lessonTypes, {
+      title: '',
+      description: '',
+      duration: '',
+      price: 0
+    }]);
+  };
+
+  const removeLessonType = (index: number) => {
+    const updatedTypes = lessonTypes.filter((_, i) => i !== index);
+    setLessonTypes(updatedTypes);
+    form.setValue('lesson_types', updatedTypes as any);
+  };
+
+  const updateLessonType = (index: number, field: string, value: string | number) => {
+    const updatedTypes = [...lessonTypes];
+    updatedTypes[index] = {
+      ...updatedTypes[index],
+      [field]: value
+    };
+    setLessonTypes(updatedTypes);
+    form.setValue('lesson_types', updatedTypes as any);
   };
 
   const handleServiceAdd = () => {
@@ -422,7 +453,6 @@ export function InstructorForm({
     console.log('Current certifications after remove:', form.getValues('certifications'));
   };
 
-  // Add logging for file uploads
   const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     console.log('Profile photo selected:', file);
@@ -432,7 +462,8 @@ export function InstructorForm({
         console.log('Uploading profile photo...');
         const url = await onPhotoUpload(file);
         console.log('Profile photo uploaded successfully:', url);
-        form.setValue('profile_photo', file);
+        setProfilePhotoUrl(url);
+        form.setValue('photos', [url]);
       } catch (error) {
         console.error('Error uploading profile photo:', error);
         toast.error('Failed to upload profile photo');
@@ -451,16 +482,26 @@ export function InstructorForm({
         imageFiles.map(file => onPhotoUpload(file))
       );
       console.log('Gallery photos uploaded successfully:', urls);
-      const existingPhotos = form.getValues('gallery_photos') || [];
-      form.setValue('gallery_photos', [...existingPhotos, ...imageFiles]);
+      const updatedGalleryPhotos = [...galleryPhotos, ...urls];
+      setGalleryPhotos(updatedGalleryPhotos);
+      form.setValue('gallery_photos', updatedGalleryPhotos as any);
+      // No need to store actual files since we're storing URLs
     } catch (error) {
       console.error('Error uploading gallery photos:', error);
       toast.error('Failed to upload one or more gallery photos');
     }
   };
 
-  // Fix the URL.createObjectURL null check
-  const previewUrl = form.watch('profile_photo') ? URL.createObjectURL(form.watch('profile_photo') as Blob) : '';
+  const removeProfilePhoto = () => {
+    setProfilePhotoUrl(null);
+    form.setValue('photos', []);
+  };
+
+  const removeGalleryPhoto = (index: number) => {
+    const updatedGalleryPhotos = galleryPhotos.filter((_, i) => i !== index);
+    setGalleryPhotos(updatedGalleryPhotos);
+    form.setValue('gallery_photos', updatedGalleryPhotos as any);
+  };
 
   const [selectedSpecialties, setSelectedSpecialties] = useState<Record<string, boolean>>({
     'Short Game': false,
@@ -487,39 +528,14 @@ export function InstructorForm({
   };
 
   const onSubmitForm = async (data: FormData) => {
-    console.log('Form submission started with data:', data);
     try {
       setIsSubmitting(true);
       
-      // Validate required fields
-      if (!data.first_name?.trim()) {
-        toast.error("First name is required");
+      // Validate required profile photo
+      if (!profilePhotoUrl) {
+        toast.error("Profile photo is required");
         return;
       }
-
-      console.log('Transforming form data to DTO...');
-
-      // Get coordinates if not already set
-      let coords = coordinates;
-      if (!coords && data.city && data.state && data.country && data.postal_code) {
-        coords = await getCoordinates({
-          city: data.city.trim(),
-          state: data.state.trim(),
-          country: data.country.trim(),
-          postal_code: data.postal_code.trim()
-        });
-      }
-
-      // Format location string
-      const location = `${data.city.trim()}, ${data.state.trim()}, ${data.country.trim()}`;
-      
-      // Format services array
-      const formattedServices = data.services.map(service => ({
-        title: service.title.trim(),
-        description: service.description.trim(),
-        duration: service.duration.trim(),
-        price: service.price.trim()
-      }));
 
       const instructorDTO: InstructorDTO = {
         id: undefined, // Will be generated by the database
@@ -538,9 +554,9 @@ export function InstructorForm({
         state: data.state.trim(),
         city: data.city.trim(),
         postal_code: data.postal_code.trim(),
-        location,
-        latitude: coords?.latitude || null,
-        longitude: coords?.longitude || null,
+        location: `${data.city.trim()}, ${data.state.trim()}, ${data.country.trim()}`,
+        latitude: coordinates?.latitude || null,
+        longitude: coordinates?.longitude || null,
         experience: data.experience,
         tagline: data.tagline?.trim() || `Professional Golf Instructor with ${data.experience} years of experience`,
         specialization: data.specialization.trim(),
@@ -550,12 +566,16 @@ export function InstructorForm({
         certifications: data.certifications.map(cert => 
           `${cert.name.trim()} - ${cert.issuer.trim()} (${cert.year.trim()})`
         ),
-        lesson_types: Object.entries(selectedLessonTypes)
-          .filter(([_, isSelected]) => isSelected)
-          .map(([type]) => type),
+        lesson_types: lessonTypes,
         highlights: data.highlights || [],
-        photos: data.photos || [],
-        services: formattedServices,
+        photos: profilePhotoUrl ? [profilePhotoUrl] : [],
+        gallery_photos: galleryPhotos,
+        services: data.services.map(service => ({
+          title: service.title.trim(),
+          description: service.description.trim(),
+          duration: service.duration.trim(),
+          price: service.price.trim()
+        })),
         faqs: (() => {
           try {
             console.log('Raw FAQ data:', data.faqs);
@@ -612,18 +632,10 @@ export function InstructorForm({
 
       await onSubmit(instructorDTO);
       
-      toast.success("Form submitted successfully! Your profile will be reviewed by our team.", {
-        duration: 5000,
-        position: 'top-center'
-      });
-      
-      console.log('Form submitted successfully');
+      toast.success("Form submitted successfully!");
     } catch (error) {
       console.error("Form submission error:", error);
-      toast.error(`Failed to submit form: ${error.message || 'Please check your information and try again.'}`, {
-        duration: 5000,
-        position: 'top-center'
-      });
+      toast.error(`Failed to submit form: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -727,41 +739,73 @@ export function InstructorForm({
 
         {activeStep === 2 && (
           <>
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Lesson Types</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="individual"
-                    checked={selectedLessonTypes.individual}
-                    onCheckedChange={(checked) => handleLessonTypeChange('individual', checked as boolean)}
-                  />
-                  <label htmlFor="individual">Individual Lessons</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="group"
-                    checked={selectedLessonTypes.group}
-                    onCheckedChange={(checked) => handleLessonTypeChange('group', checked as boolean)}
-                  />
-                  <label htmlFor="group">Group Lessons</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="junior"
-                    checked={selectedLessonTypes.junior}
-                    onCheckedChange={(checked) => handleLessonTypeChange('junior', checked as boolean)}
-                  />
-                  <label htmlFor="junior">Junior Programs</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="clinic"
-                    checked={selectedLessonTypes.clinic}
-                    onCheckedChange={(checked) => handleLessonTypeChange('clinic', checked as boolean)}
-                  />
-                  <label htmlFor="clinic">Clinics</label>
-                </div>
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Lesson Types</h3>
+                <p className="text-sm text-gray-600">Add between 1 and 3 types of lessons you offer. Currently added: {lessonTypes.length}/3</p>
+                
+                {lessonTypes.map((lessonType, index) => (
+                  <div key={index} className="space-y-4 p-4 border rounded-lg">
+                    <div className="flex justify-between">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <Label>Title</Label>
+                          <Input
+                            value={lessonType.title}
+                            onChange={(e) => updateLessonType(index, 'title', e.target.value)}
+                            placeholder="e.g., Private Lesson"
+                          />
+                        </div>
+                        <div>
+                          <Label>Duration (minutes)</Label>
+                          <Input
+                            type="number"
+                            value={lessonType.duration}
+                            onChange={(e) => updateLessonType(index, 'duration', e.target.value)}
+                            placeholder="e.g., 60"
+                          />
+                        </div>
+                        <div>
+                          <Label>Price ($)</Label>
+                          <Input
+                            type="number"
+                            value={lessonType.price}
+                            onChange={(e) => updateLessonType(index, 'price', Number(e.target.value))}
+                            placeholder="e.g., 100"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => removeLessonType(index)}
+                        className="ml-4"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <div>
+                      <Label>Description</Label>
+                      <Textarea
+                        value={lessonType.description}
+                        onChange={(e) => updateLessonType(index, 'description', e.target.value)}
+                        placeholder="Describe what's included in this lesson type..."
+                      />
+                    </div>
+                  </div>
+                ))}
+                
+                {lessonTypes.length < 3 && (
+                  <Button
+                    type="button"
+                    onClick={addLessonType}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    Add Another Lesson
+                  </Button>
+                )}
               </div>
             </div>
 
@@ -891,43 +935,34 @@ export function InstructorForm({
               {/* Profile Photo Upload */}
               <div className="space-y-4">
                 <div className="flex flex-col items-center">
-                  <h3 className="text-lg font-semibold mb-2">Profile Photo</h3>
+                  <h3 className="text-lg font-semibold mb-2">Profile Photo <span className="text-red-500">*</span></h3>
                   <p className="text-sm text-gray-600 mb-4">Upload a professional photo of yourself</p>
                   <label 
                     htmlFor="profile-photo-upload" 
                     className="w-full max-w-[300px] aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 transition-colors flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800"
                   >
-                    {form.watch('profile_photo') ? (
+                    {profilePhotoUrl ? (
                       <div className="relative w-full h-full">
                         <img
-                          src={URL.createObjectURL(form.watch('profile_photo') as Blob)}
+                          src={profilePhotoUrl}
                           alt="Profile Preview"
                           className="w-full h-full object-cover rounded-lg"
                         />
-                        <button
+                        <Button
                           type="button"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            form.setValue('profile_photo', null);
+                            removeProfilePhoto();
                           }}
                           className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                          </svg>
-                        </button>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     ) : (
                       <>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 mb-4">
-                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
-                          <line x1="16" y1="5" x2="22" y2="5"></line>
-                          <line x1="19" y1="2" x2="19" y2="8"></line>
-                          <circle cx="9" cy="9" r="2"></circle>
-                          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                        </svg>
+                        <Upload className="h-10 w-10 text-gray-400 mb-4" />
                         <span className="text-sm text-gray-500">Click to upload profile photo</span>
                         <span className="text-xs text-gray-400 mt-1">Maximum file size: 5MB</span>
                       </>
@@ -940,6 +975,9 @@ export function InstructorForm({
                       className="hidden"
                     />
                   </label>
+                  {form.formState.errors.photos && (
+                    <p className="text-sm text-red-500 mt-2">Profile photo is required</p>
+                  )}
                 </div>
               </div>
 
@@ -952,14 +990,7 @@ export function InstructorForm({
                     htmlFor="gallery-photos-upload" 
                     className="w-full max-w-[300px] aspect-square border-2 border-dashed rounded-lg cursor-pointer hover:border-blue-500 transition-colors flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400 mb-4">
-                      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path>
-                      <line x1="16" y1="5" x2="22" y2="5"></line>
-                      <line x1="19" y1="2" x2="19" y2="8"></line>
-                      <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                      <circle cx="9" cy="9" r="2"></circle>
-                      <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
-                    </svg>
+                    <Upload className="h-10 w-10 text-gray-400 mb-4" />
                     <span className="text-sm text-gray-500">Click to upload gallery photos</span>
                     <span className="text-xs text-gray-400 mt-1">Up to 5 photos, 5MB each</span>
                     <input
@@ -972,39 +1003,33 @@ export function InstructorForm({
                     />
                   </label>
                 </div>
+
+                {/* Gallery Preview Grid */}
+                {galleryPhotos.length > 0 && (
+                  <div className="mt-8">
+                    <h4 className="text-lg font-semibold mb-4">Gallery Preview</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {galleryPhotos.map((photoUrl, index) => (
+                        <div key={index} className="relative aspect-square">
+                          <img
+                            src={photoUrl}
+                            alt={`Gallery ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => removeGalleryPhoto(index)}
+                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Gallery Preview Grid */}
-            {form.watch('gallery_photos')?.length > 0 && (
-              <div className="mt-8">
-                <h4 className="text-lg font-semibold mb-4">Gallery Preview</h4>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {form.watch('gallery_photos')?.map((photo: File, index: number) => (
-                    <div key={index} className="relative aspect-square">
-                      <img
-                        src={URL.createObjectURL(photo)}
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const photos = form.getValues('gallery_photos');
-                          form.setValue('gallery_photos', photos.filter((_, i) => i !== index));
-                        }}
-                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
 

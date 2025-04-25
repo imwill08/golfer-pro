@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { InstructorFormValues } from '@/types/instructor';
 import { v4 as uuidv4 } from 'uuid';
 import { uploadPhoto, uploadPhotos } from './photoUpload';
+import { processInstructorPhotos } from './instructorFormProcessor';
+import { transformInstructorFormData } from './instructorFormTransformer';
 
 // Track the last API request time
 let lastRequestTime = 0;
@@ -84,15 +86,57 @@ const processSpecializations = (specialtiesObj: Record<string, boolean>): string
     .map(([key]) => specialtyMappings[key as keyof typeof specialtyMappings]);
 };
 
-const processServices = (servicesObj: Record<string, { price: string; duration: string; description: string; }>): any[] => {
-  return Object.entries(servicesObj)
-    .filter(([_, service]) => service && service.price && service.duration)
-    .map(([name, service]) => ({
-      title: name,
-      price: `$${service.price}`,
-      duration: `${service.duration} minutes`,
-      description: service.description || ''
+const processLessonTypesData = (lessonTypes: any): any[] => {
+  // If it's already an array in the new format, just ensure all properties are set correctly
+  if (Array.isArray(lessonTypes)) {
+    return lessonTypes.map(lt => ({
+      title: lt.title || '',
+      price: lt.price ? (lt.price.toString().startsWith('$') ? lt.price : `$${lt.price}`) : '$0',
+      duration: lt.duration?.includes('minute') ? lt.duration : `${lt.duration || ''} minutes`,
+      description: lt.description || ''
     }));
+  }
+  
+  // Handle old object-based format
+  if (typeof lessonTypes === 'object' && lessonTypes !== null) {
+    return Object.entries(lessonTypes)
+      .filter(([_, details]) => {
+        if (!details || typeof details !== 'object') return false;
+        const typedDetails = details as { price?: any; duration?: any };
+        return typedDetails.price && typedDetails.duration;
+      })
+      .map(([name, details]) => {
+        // Map the service name to a more readable title
+        const titles: Record<string, string> = {
+          privateLesson: 'Private Lesson',
+          groupLessons: 'Group Lessons',
+          onlineCoaching: 'Online Coaching',
+          oncourseInstruction: 'On-Course Instruction',
+          advancedTraining: 'Advanced Training',
+          juniorCoaching: 'Junior Coaching'
+        };
+        
+        const detailsObj = details as { 
+          price: string | number; 
+          duration: string; 
+          description?: string; 
+        };
+        
+        const priceStr = typeof detailsObj.price === 'number' 
+          ? detailsObj.price.toString() 
+          : detailsObj.price;
+        
+        return {
+          title: titles[name as keyof typeof titles] || name,
+          price: priceStr.startsWith('$') ? priceStr : `$${priceStr}`,
+          duration: detailsObj.duration.includes('minute') ? detailsObj.duration : `${detailsObj.duration} minutes`,
+          description: detailsObj.description || ''
+        };
+      });
+  }
+  
+  // Return empty array if neither format matches
+  return [];
 };
 
 const processFAQs = (faqData: { customFaqs?: { question: string; answer: string; }[] }): any[] => {
@@ -106,7 +150,7 @@ const processFAQs = (faqData: { customFaqs?: { question: string; answer: string;
   }));
 };
 
-export const handleInstructorFormSubmit = async (formData: InstructorFormValues): Promise<void> => {
+export const handleInstructorFormSubmit = async (formData: InstructorFormValues, isAdmin: boolean = false, existingInstructorId?: string): Promise<void> => {
   try {
     console.log('Validating form data:', formData);
     
@@ -138,23 +182,44 @@ export const handleInstructorFormSubmit = async (formData: InstructorFormValues)
       throw new Error(`Please fill in the following required fields: ${missingFields.join(', ')}`);
     }
 
-    // Check if email already exists
-    const { data: existingInstructor, error: emailCheckError } = await supabase
-      .from('instructors')
-      .select('id')
-      .eq('email', formData.email)
-      .single();
+    // Check if email already exists, but skip if admin is editing an existing instructor
+    if (!isAdmin || !existingInstructorId) {
+      const { data: existingInstructor, error: emailCheckError } = await supabase
+        .from('instructors')
+        .select('id')
+        .eq('email', formData.email)
+        .single();
 
-    if (emailCheckError && emailCheckError.code !== 'PGRST116') {
-      throw emailCheckError;
-    }
+      if (emailCheckError && emailCheckError.code !== 'PGRST116') {
+        throw emailCheckError;
+      }
 
-    if (existingInstructor) {
-      throw new Error('An instructor with this email address already exists. Please use a different email address.');
+      if (existingInstructor) {
+        throw new Error('An instructor with this email address already exists. Please use a different email address or contact support if you need to update your profile.');
+      }
+    } else {
+      // For admin edits, only check for duplicate email if it's different from the current instructor
+      const { data: existingInstructor, error: emailCheckError } = await supabase
+        .from('instructors')
+        .select('id')
+        .eq('email', formData.email)
+        .neq('id', existingInstructorId)
+        .single();
+
+      if (emailCheckError && emailCheckError.code !== 'PGRST116') {
+        throw emailCheckError;
+      }
+
+      if (existingInstructor) {
+        throw new Error('This email address is already associated with another instructor. Please use a different email address.');
+      }
     }
 
     // Validate lesson types
-    const hasSelectedLessonType = Object.values(formData.lessonTypes).some(value => value);
+    const hasSelectedLessonType = Array.isArray(formData.lesson_types) ? 
+      formData.lesson_types.length > 0 : 
+      Object.values(formData.lesson_types).some(value => value);
+
     if (!hasSelectedLessonType) {
       throw new Error('Please select at least one lesson type');
     }
@@ -176,65 +241,30 @@ export const handleInstructorFormSubmit = async (formData: InstructorFormValues)
     // Generate a new UUID for the instructor
     const instructor_id = uuidv4();
 
-    // Handle photo uploads first
-    let photos: string[] = [];
-    
-    // Upload profile photo if provided
-    if (formData.profilePhoto) {
-      const profilePhotoUrl = await uploadPhoto(formData.profilePhoto, instructor_id);
-      photos = [profilePhotoUrl]; // Add profile photo as first photo
-    }
-    
-    // Upload additional photos if provided
-    if (formData.additionalPhotos && formData.additionalPhotos.length > 0) {
-      const additionalPhotoUrls = await uploadPhotos(formData.additionalPhotos, instructor_id);
-      photos = [...photos, ...additionalPhotoUrls];
-    }
+    // Handle photo uploads using the new processor
+    const { profilePhotos, galleryPhotos } = await processInstructorPhotos(formData);
 
     // Format location string
     const location = `${formData.city}, ${formData.state}, ${formData.country}`;
 
-    // Transform form data with correct field names
-    const transformedData = {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      website: formData.website || '',
-      country: formData.country,
-      state: formData.state,
-      city: formData.city,
-      postal_code: formData.postalCode,
+    // Transform form data with the new transformer
+    const transformedData = await transformInstructorFormData(formData, {
+      photos: profilePhotos,
+      gallery_photos: galleryPhotos
+    });
+
+    // Add coordinates and other fields
+    const instructorData = {
+      id: instructor_id,
+      ...transformedData,
       location: location,
       latitude: coordinates?.latitude || null,
       longitude: coordinates?.longitude || null,
-      experience: parseInt(formData.experience?.toString() || '0'),
-      tagline: formData.tagline || `Professional Golf Instructor with ${formData.experience} years of experience`,
-      specialization: formData.specialization,
-      bio: formData.bio,
-      additional_bio: formData.additionalBio || '',
       contact_info: JSON.stringify({
         email: formData.email,
         phone: formData.phone,
         website: formData.website || ''
       })
-    };
-
-    // Process the data
-    const specialties = processSpecializations(formData.specialties || {});
-    const services = processServices(formData.services || {});
-    const faqs = processFAQs({ customFaqs: formData.faqs.customFaqs });
-
-    // Prepare instructor data
-    const instructorData = {
-      id: instructor_id,
-      ...transformedData,
-      specialties,
-      services,
-      faqs,
-      photos,
-      status: 'pending',
-      is_approved: false
     };
 
     console.log('Instructor data to insert:', instructorData);

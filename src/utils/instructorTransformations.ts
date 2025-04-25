@@ -18,12 +18,12 @@ export interface RawInstructor {
   profile_photo: string;
   years_experience: number;
   specialization: string;
-  lesson_types: string[];
   hourly_rate: number;
   specialties?: string[];
   certifications?: string[];
-  services?: ServiceObject[];
-  photos?: string[]; // Add photos property to the interface
+  lesson_types?: ServiceObject[];
+  photos?: string[]; // Profile photos
+  gallery_photos?: string[]; // Gallery photos
   latitude?: number;
   longitude?: number;
   bio?: string;
@@ -70,11 +70,11 @@ const extractLessonTypes = (instructor: RawInstructor): string => {
     return instructor.lesson_types.join(' / ');
   }
 
-  // Try to extract from services if available
-  if (Array.isArray(instructor.services) && instructor.services.length > 0) {
-    const serviceTypes = instructor.services.map(service => service.title).filter(Boolean);
-    if (serviceTypes.length > 0) {
-      return serviceTypes.join(' / ');
+  // Try to extract from lesson_types if available
+  if (Array.isArray(instructor.lesson_types) && instructor.lesson_types.length > 0) {
+    const lessonTypeNames = instructor.lesson_types.map(lessonType => lessonType.title).filter(Boolean);
+    if (lessonTypeNames.length > 0) {
+      return lessonTypeNames.join(' / ');
     }
   }
 
@@ -89,7 +89,7 @@ const getProfilePhotoUrl = (instructor: RawInstructor): string => {
     return instructor.profile_photo;
   }
   
-  // Check if there's a photos array
+  // Check if there's a photos array (profile photos)
   if (Array.isArray(instructor.photos) && instructor.photos.length > 0 && instructor.photos[0]) {
     return instructor.photos[0].toString();
   }
@@ -114,25 +114,22 @@ export const transformInstructors = (rawInstructors: RawInstructor[] | null): Pr
   if (!rawInstructors) return [];
   
   return rawInstructors.map(instructor => {
-    // Transform specialties to IDs
-    const specialtyIds = instructor.specialties?.map(mapSpecialtyToId) || [];
-    
     return {
       id: instructor.id,
       name: `${instructor.first_name} ${instructor.last_name}`,
       location: instructor.location,
       image: getProfilePhotoUrl(instructor),
       experience: instructor.years_experience,
-      specialty: specialtyIds[0] || 'shortGame', // Default to shortGame if none specified
-      specialties: specialtyIds, // Add the full array of specialty IDs
+      specialty: instructor.specialties?.[0] || 'Short Game', // Default to Short Game if none specified
+      specialties: instructor.specialties || [], // Keep original specialty names
       lessonType: extractLessonTypes(instructor),
       rate: instructor.hourly_rate.toString(),
       specialization: instructor.specialization || 'Swing Analysis Specialist',
       priceRange: `$${instructor.hourly_rate}/Hr`,
       imageUrl: getProfilePhotoUrl(instructor),
       certifications: instructor.certifications || ['PGA Certified'],
-      services: Array.isArray(instructor.services) 
-        ? instructor.services.map(transformService) 
+      lesson_types: Array.isArray(instructor.lesson_types) 
+        ? instructor.lesson_types.map(transformService) 
         : [],
       latitude: instructor.latitude,
       longitude: instructor.longitude,

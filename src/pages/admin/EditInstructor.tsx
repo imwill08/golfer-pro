@@ -8,6 +8,7 @@ import { transformToFormValues } from '@/utils/instructorFormTransformer';
 import { toast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { uploadPhoto, uploadPhotos } from '@/utils/photoUpload';
+import { processInstructorPhotos } from '@/utils/instructorFormProcessor';
 
 interface EditInstructorProps {
   instructorId: string;
@@ -25,20 +26,11 @@ const EditInstructor: React.FC<EditInstructorProps> = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('instructors')
-        .select(`
-          *,
-          contact_info,
-          services,
-          specialties,
-          certifications,
-          photos,
-          faqs
-        `)
+        .select('*')
         .eq('id', instructorId)
         .single();
       
       if (error) throw error;
-      console.log('Fetched instructor data:', data);
       return data;
     }
   });
@@ -51,35 +43,32 @@ const EditInstructor: React.FC<EditInstructorProps> = ({
         throw new Error(`Connection error: ${connError}`);
       }
 
-      // Handle photo uploads first
-      let photos: string[] = instructor?.photos || [];
-      
-      // Upload profile photo if provided
-      if (data.profilePhoto instanceof File) {
-        const profilePhotoUrl = await uploadPhoto(data.profilePhoto, instructorId);
-        // If there are existing photos, replace the first one (profile photo)
-        // If no photos exist, add as first photo
-        if (photos.length > 0) {
-          photos[0] = profilePhotoUrl;
-        } else {
-          photos = [profilePhotoUrl];
+      // Check for duplicate email only if email is being changed
+      if (data.email !== instructor?.email) {
+        const { data: existingInstructor, error: emailCheckError } = await supabase
+          .from('instructors')
+          .select('id')
+          .eq('email', data.email)
+          .neq('id', instructorId)
+          .single();
+
+        if (emailCheckError && emailCheckError.code !== 'PGRST116') {
+          throw emailCheckError;
+        }
+
+        if (existingInstructor) {
+          throw new Error('This email address is already associated with another instructor. Please use a different email address.');
         }
       }
+
+      // Handle photo uploads using the processInstructorPhotos utility
+      const { profilePhotos, galleryPhotos } = await processInstructorPhotos(data, instructorId);
       
-      // Upload additional photos if provided
-      if (data.additionalPhotos && Array.isArray(data.additionalPhotos)) {
-        const additionalPhotoUrls = await Promise.all(
-          data.additionalPhotos
-            .filter((photo): photo is File => photo instanceof File)
-            .map(photo => uploadPhoto(photo, instructorId))
-        );
-        // Append new additional photos to existing ones (after profile photo)
-        if (photos.length > 0) {
-          photos = [...photos.slice(0, 1), ...additionalPhotoUrls, ...photos.slice(1)];
-        } else {
-          photos = additionalPhotoUrls;
-        }
-      }
+      // Preserve existing photos if no new ones uploaded
+      const photos = profilePhotos.length > 0 ? profilePhotos : instructor?.photos || [];
+      const gallery_photos = galleryPhotos.length > 0 ? 
+        [...galleryPhotos, ...(instructor?.gallery_photos || [])] : 
+        instructor?.gallery_photos || [];
 
       // Convert form values to database format
       // First create arrays from certification checkboxes
@@ -101,20 +90,23 @@ const EditInstructor: React.FC<EditInstructorProps> = ({
       if (data.specialties.advancedTraining) specialties.push('Advanced Training');
       if (data.specialties.juniorCoaching) specialties.push('Junior Coaching');
 
-      // Transform services into an array format while preserving existing data
-      const existingServices = instructor?.services || [];
-      const updatedServices = Object.entries(data.services || {})
-        .filter(([_, service]) => service && service.price && service.duration)
-        .map(([serviceType, service]) => {
-          // Try to find existing service
-          const existingService = existingServices.find(s => s.title === serviceType);
-          return {
-            title: serviceType,
-            description: service.description || existingService?.description || '',
-            duration: service.duration || existingService?.duration || '',
-            price: parseFloat(service.price) || existingService?.price || 0
-          };
-        });
+      // Process lesson types data - handles the new dynamic array structure
+      let lesson_types_data: Array<{
+        title: string;
+        description: string;
+        duration: string;
+        price: number | string;
+      }> = [];
+      
+      // Handle the new array-based lesson_types structure
+      if (Array.isArray(data.lesson_types)) {
+        lesson_types_data = data.lesson_types.map(lt => ({
+          title: lt.title,
+          description: lt.description,
+          duration: lt.duration,
+          price: lt.price
+        }));
+      }
 
       // Parse location data
       const locationParts = data.location.split(', ');
@@ -126,22 +118,29 @@ const EditInstructor: React.FC<EditInstructorProps> = ({
         first_name: data.firstName || instructor?.first_name,
         last_name: data.lastName || instructor?.last_name,
         name: `${data.firstName} ${data.lastName}`.trim() || instructor?.name,
+        email: data.email || instructor?.email,
+        phone: data.phone || instructor?.phone,
+        website: data.website || instructor?.website || '',
         location: data.location || instructor?.location,
         city: cityName,
         state: stateName,
-        country: 'US', // Default to US for now
+        country: data.country || instructor?.country || 'US',
+        postal_code: data.postalCode || instructor?.postal_code,
         specialization: data.specialization || instructor?.specialization,
         experience: data.experience || instructor?.experience,
         bio: data.bio || instructor?.bio,
+        additional_bio: data.additionalBio || instructor?.additional_bio,
         certifications: certifications.length > 0 ? certifications : instructor?.certifications,
         specialties: specialties.length > 0 ? specialties : instructor?.specialties,
-        services: updatedServices.length > 0 ? updatedServices : instructor?.services,
+        lesson_types: lesson_types_data.length > 0 ? lesson_types_data : instructor?.lesson_types,
         contact_info: {
           email: data.email || instructor?.contact_info?.email,
           phone: data.phone || instructor?.contact_info?.phone,
           website: data.website || instructor?.contact_info?.website
         },
-        photos: photos.length > 0 ? photos : instructor?.photos,
+        photos: photos,
+        gallery_photos: gallery_photos,
+        faqs: data.faqs || instructor?.faqs || [],
         updated_at: new Date().toISOString()
       };
 

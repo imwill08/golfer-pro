@@ -5,20 +5,52 @@ export class InstructorService {
    * Normalizes raw form data into a consistent InstructorDTO format
    */
   static normalizeInput(raw: any): Partial<InstructorDTO> {
-    // Handle services array/object normalization
-    let services: Service[] = [];
-    if (raw.services) {
+    // Handle lesson_types array/object normalization
+    let lesson_types: Service[] = [];
+    
+    if (raw.lesson_types) {
+      if (Array.isArray(raw.lesson_types)) {
+        // If it's already an array (new structure), use it directly
+        lesson_types = raw.lesson_types.map((lt: any) => ({
+          title: lt.title || '',
+          description: lt.description || '',
+          duration: lt.duration || '',
+          price: typeof lt.price === 'number' ? lt.price : Number(String(lt.price || '0').replace(/[^0-9.]/g, '')) || 0
+        }));
+      } else if (typeof raw.lesson_types === 'object' && raw.lesson_types !== null) {
+        // Handle old structure (object with boolean or object values)
+        try {
+          lesson_types = Object.entries(raw.lesson_types)
+            .filter(([_, value]) => value && typeof value === 'object' && 'title' in value)
+            .map(([_, value]: [string, any]) => ({
+              title: value.title || '',
+              description: value.description || '',
+              duration: value.duration || '',
+              price: typeof value.price === 'number' ? value.price : Number(String(value.price || '0').replace(/[^0-9.]/g, '')) || 0
+            }));
+        } catch (error) {
+          console.error('Error processing lesson_types:', error);
+          lesson_types = [];
+        }
+      }
+    } else if (raw.services) {
+      // Backward compatibility with old services field
       if (Array.isArray(raw.services)) {
-        services = raw.services;
-      } else if (typeof raw.services === 'object') {
-        services = Object.entries(raw.services as Record<string, Service>)
-          .filter(([key, value]) => key !== '0' && value.title && value.title !== '0')
-          .map(([_, value]) => value);
+        lesson_types = raw.services;
+      } else if (typeof raw.services === 'object' && raw.services !== null) {
+        try {
+          lesson_types = Object.entries(raw.services as Record<string, Service>)
+            .filter(([key, value]) => key !== '0' && value.title && value.title !== '0')
+            .map(([_, value]) => value);
+        } catch (error) {
+          console.error('Error processing services:', error);
+          lesson_types = [];
+        }
       }
     }
 
     // Normalize arrays to prevent null/undefined
-    const arrays = ['specialties', 'certifications', 'lesson_types', 'highlights', 'photos'];
+    const arrays = ['specialties', 'certifications', 'highlights', 'photos', 'gallery_photos'];
     const normalizedArrays = arrays.reduce((acc, key) => ({
       ...acc,
       [key]: Array.isArray(raw[key]) ? raw[key] : 
@@ -27,8 +59,8 @@ export class InstructorService {
 
     // Generate computed fields
     const computed = {
-      name: raw.first_name && raw.last_name ? `${raw.first_name} ${raw.last_name}` : undefined,
-      location: [raw.city, raw.state, raw.country].filter(Boolean).join(', '),
+      name: raw.first_name && raw.last_name ? `${raw.first_name} ${raw.last_name}` : raw.name || '',
+      location: raw.location || [raw.city, raw.state, raw.country].filter(Boolean).join(', '),
       contact_info: {
         email: raw.email,
         phone: raw.phone,
@@ -39,7 +71,7 @@ export class InstructorService {
     return {
       ...raw,
       ...normalizedArrays,
-      services,
+      lesson_types,
       ...computed
     };
   }
@@ -49,7 +81,7 @@ export class InstructorService {
    */
   static validateAndTransform(dto: Partial<InstructorDTO>): InstructorDTO {
     try {
-      return InstructorSchema.parse(dto) as InstructorDTO;
+      return InstructorSchema.parse(dto) as unknown as InstructorDTO;
     } catch (error) {
       console.error('Validation error:', error);
       throw error;
@@ -61,21 +93,19 @@ export class InstructorService {
    */
   static toDbPayload(dto: InstructorDTO): any {
     // Format arrays for PostgreSQL
-    const arrayFields = ['specialties', 'certifications', 'lesson_types', 'highlights', 'photos'];
+    const arrayFields = ['specialties', 'certifications', 'highlights', 'photos', 'gallery_photos'];
     const formattedArrays = arrayFields.reduce((acc, field) => ({
       ...acc,
       [field]: dto[field]?.length ? `{${dto[field].join(',')}}` : '{}'
     }), {});
 
-    // Handle services format
-    const services = Array.isArray(dto.services) ? 
-      JSON.stringify(dto.services) :
-      JSON.stringify(Object.values(dto.services));
+    // Handle lesson_types format - ensure it's always stored as JSON
+    const lesson_types = JSON.stringify(Array.isArray(dto.lesson_types) ? dto.lesson_types : []);
 
     return {
       ...dto,
       ...formattedArrays,
-      services,
+      lesson_types,
       faqs: JSON.stringify(dto.faqs || []),
       contact_info: JSON.stringify(dto.contact_info)
     };
@@ -84,7 +114,9 @@ export class InstructorService {
   /**
    * Formats database record back into DTO format
    */
-  static fromDbPayload(dbRec: any): InstructorDTO {
+  static fromDbPayload(dbRec: any): Partial<InstructorDTO> {
+    if (!dbRec) return {} as Partial<InstructorDTO>;
+    
     // Parse PostgreSQL arrays
     const parseArray = (str: string) => {
       if (!str) return [];
@@ -107,27 +139,59 @@ export class InstructorService {
       return field;
     };
 
-    // Handle special case for services
-    const services = parseJson(dbRec.services, []);
-    const normalizedServices = Array.isArray(services) ? 
-      services : 
-      Object.values(services as Record<string, Service>).filter(s => s.title && s.title !== '0');
+    // Handle special case for lesson_types (with backward compatibility for services)
+    let lesson_types: Service[] = [];
+    
+    if (dbRec.lesson_types) {
+      const parsedTypes = parseJson(dbRec.lesson_types, []);
+      if (Array.isArray(parsedTypes)) {
+        lesson_types = parsedTypes.map((lt: any) => ({
+          title: lt.title || '',
+          description: lt.description || '',
+          duration: lt.duration || '',
+          price: typeof lt.price === 'number' ? lt.price : 
+                Number(String(lt.price || '0').replace(/[^0-9.]/g, '')) || 0
+        }));
+      }
+    } else if (dbRec.services) {
+      // Backward compatibility
+      const parsedServices = parseJson(dbRec.services, []);
+      if (Array.isArray(parsedServices)) {
+        lesson_types = parsedServices.map((s: any) => ({
+          title: s.title || '',
+          description: s.description || '',
+          duration: s.duration || '',
+          price: typeof s.price === 'number' ? s.price :
+                 Number(String(s.price || '0').replace(/[^0-9.]/g, '')) || 0
+        }));
+      } else if (typeof parsedServices === 'object') {
+        lesson_types = Object.values(parsedServices)
+          .filter(s => s && typeof s === 'object' && 'title' in s)
+          .map((s: any) => ({
+            title: s.title || '',
+            description: s.description || '', 
+            duration: s.duration || '',
+            price: typeof s.price === 'number' ? s.price :
+                   Number(String(s.price || '0').replace(/[^0-9.]/g, '')) || 0
+          }));
+      }
+    }
 
     return {
       ...dbRec,
       specialties: parseArray(dbRec.specialties),
       certifications: parseArray(dbRec.certifications),
-      lesson_types: parseArray(dbRec.lesson_types),
       highlights: parseArray(dbRec.highlights),
       photos: parseArray(dbRec.photos),
-      services: normalizedServices,
+      gallery_photos: parseArray(dbRec.gallery_photos || []),
+      lesson_types,
       faqs: parseJson(dbRec.faqs, []),
       contact_info: parseJson(dbRec.contact_info, {
         email: dbRec.email,
         phone: dbRec.phone,
         website: dbRec.website || ''
       })
-    } as InstructorDTO;
+    };
   }
 
   /**

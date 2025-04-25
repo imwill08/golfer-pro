@@ -10,14 +10,17 @@ export interface InstructorProps {
   location: string;
   experience: number;
   specialization: string;
-  lessonType: string;
+  lesson_types: Array<{
+    title: string;
+    description: string;
+    duration: string;
+    price: number;
+  }>;
   priceRange: string;
   imageUrl: string;
   specialty?: string;
-  image?: string;
-  rate?: string;
   certifications?: string[];
-  services?: any[];
+  specialties?: string[];
 }
 
 const InstructorCard = ({
@@ -26,17 +29,23 @@ const InstructorCard = ({
   location,
   experience,
   specialization,
-  lessonType,
+  lesson_types,
   priceRange,
   imageUrl,
   specialty,
-  certifications
+  certifications,
+  specialties
 }: InstructorProps) => {
   const navigate = useNavigate();
-  // Convert lessonType to array if it's a string
-  const lessonTypes = typeof lessonType === 'string' 
-    ? lessonType.split(' / ') 
-    : Array.isArray(lessonType) ? lessonType : [];
+  
+  // Get lesson type titles for display
+  const lessonTitles = Array.isArray(lesson_types) && lesson_types.length > 0
+    ? lesson_types.map(lt => lt.title)
+    : [];
+
+  // Debug log
+  console.log('Card lesson_types:', lesson_types);
+  console.log('Card lessonTitles:', lessonTitles);
     
   // Use a fallback image if imageUrl is empty
   const imageSource = imageUrl && imageUrl.trim() !== '' 
@@ -49,17 +58,17 @@ const InstructorCard = ({
       navigate(`/instructors/${id}`);
     }
   };
-    
+
   return (
     <div 
       className="group bg-card rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg border border-border cursor-pointer"
       onClick={handleCardClick}
     >
-      <div className="aspect-[4/3] sm:aspect-[3/2] relative overflow-hidden">
+      <div className="relative">
         <img
           src={imageSource}
           alt={name}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           onError={(e) => {
             // Fallback if image fails to load
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=2070&auto=format&fit=crop';
@@ -89,13 +98,15 @@ const InstructorCard = ({
           
           <div className="flex items-center text-sm text-muted-foreground">
             <Award size={14} className="mr-2 flex-shrink-0" />
-            <span className="line-clamp-1">{specialization || specialty || 'Swing Analysis Specialist'}</span>
+            <span className="line-clamp-1">
+              {specialties?.length ? specialties.join(' • ') : 'No specialties listed'}
+            </span>
           </div>
           
           <div className="flex items-center text-sm text-muted-foreground">
             <MonitorSmartphone size={14} className="mr-2 flex-shrink-0" />
             <span className="line-clamp-1">
-              {lessonTypes.length > 0 ? lessonTypes.join(' / ') : 'In-Person / Online'}
+              {lessonTitles.length > 0 ? lessonTitles.join(' / ') : 'No lessons available'}
             </span>
           </div>
         </div>

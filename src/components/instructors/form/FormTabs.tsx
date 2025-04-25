@@ -25,10 +25,10 @@ export const FormTabs: React.FC<FormTabsProps> = ({ activeTab, onTabChange, chil
             Professional
           </TabsTrigger>
           <TabsTrigger 
-            value="services" 
+            value="lesson_types" 
             className="min-w-[130px] md:min-w-0 px-4 py-2 text-sm"
           >
-            Services
+            Lesson Types
           </TabsTrigger>
           <TabsTrigger 
             value="specialties" 

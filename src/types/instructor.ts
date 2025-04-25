@@ -10,7 +10,7 @@ export interface Service {
   title: string;
   description: string;
   duration: string;
-  price: string;
+  price: number;
 }
 
 export interface FAQ {
@@ -27,21 +27,52 @@ export interface ContactInfo {
 export interface InstructorDetails {
   id: string;
   name: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  website: string;
+  country: string;
+  state: string;
+  city: string;
   location: string;
-  latitude?: number;
-  longitude?: number;
-  tagline: string;
   experience: number;
+  tagline: string;
   specialization: string;
-  certifications: string[];
   bio: string;
-  additionalBio: string;
+  additional_bio: string;
   specialties: string[];
-  highlights: Highlight[];
-  services: Service[];
-  faqs: FAQ[];
+  certifications: string[];
   photos: string[];
-  contactInfo: ContactInfo;
+  gallery_photos: string[];
+  lesson_types: Array<{
+    title: string;
+    description: string;
+    duration: string;
+    price: number;
+  }>;
+  faqs: Array<{
+    question: string;
+    answer: string;
+  }>;
+  contact_info: {
+    email: string;
+    phone: string;
+    website: string;
+    instagram: string;
+    youtube: string;
+    facebook: string;
+  };
+  review_count: number;
+  profile_views: number;
+  updated_at: string;
+  stats?: {
+    profile_views: number;
+    contact_clicks: number;
+  };
+}
+
+export interface InstructorFAQs {
+  [key: string]: any; // Allow for custom FAQs
 }
 
 export interface InstructorFormValues {
@@ -54,12 +85,11 @@ export interface InstructorFormValues {
   
   // Professional Information
   experience: number;
-  // Enhanced location fields
   postalCode: string;
   country: string;
   state: string;
   city: string;
-  location: string; // We'll keep this for compatibility, will be generated from the other fields
+  location: string;
   latitude?: number;
   longitude?: number;
   tagline?: string;
@@ -76,49 +106,13 @@ export interface InstructorFormValues {
     otherText?: string;
   };
   
-  // Lesson Types/Services
-  lessonTypes: {
-    privateLesson: boolean;
-    groupLessons: boolean;
-    onlineCoaching: boolean;
-    oncourseInstruction: boolean;
-    advancedTraining: boolean;
-    juniorCoaching: boolean;
-  };
-  
-  // Services pricing and details
-  services: {
-    privateLesson?: {
-      price: string;
-      duration: string;
-      description: string;
-    };
-    groupLessons?: {
-      price: string;
-      duration: string;
-      description: string;
-    };
-    onlineCoaching?: {
-      price: string;
-      duration: string;
-      description: string;
-    };
-    oncourseInstruction?: {
-      price: string;
-      duration: string;
-      description: string;
-    };
-    advancedTraining?: {
-      price: string;
-      duration: string;
-      description: string;
-    };
-    juniorCoaching?: {
-      price: string;
-      duration: string;
-      description: string;
-    };
-  };
+  // Lesson Types - new dynamic structure
+  lesson_types: Array<{
+    title: string;
+    description: string;
+    duration: string;
+    price: number;
+  }>;
   
   // Specialties
   specialties: {
@@ -134,11 +128,12 @@ export interface InstructorFormValues {
   
   // Photos
   photos?: string[];
+  gallery_photos?: string[];
   profilePhoto: File | null;
   additionalPhotos: File[] | null;
   
-  // FAQs
-  faqs: Record<string, any>;
+  // FAQs - only dynamic FAQs
+  faqs: Array<{ question: string; answer: string }>;
 }
 
 export interface Instructor {
@@ -156,7 +151,7 @@ export interface Instructor {
   priceRange: string;
   imageUrl?: string;
   certifications?: string[];
-  services?: Service[];
+  lesson_types?: Service[];
   latitude?: number;
   longitude?: number;
 }
@@ -183,10 +178,10 @@ export interface ProcessedInstructor {
   additional_bio?: string;
   specialties: string[];
   certifications: string[];
-  lesson_types: string[];
   highlights: string[];
   photos: string[];
-  services: Array<{
+  gallery_photos?: string[];
+  lesson_types: Array<{
     title: string;
     description: string;
     duration: string;
@@ -254,9 +249,15 @@ export interface InstructorDTO {
   additional_bio?: string;
   specialties: string[];
   certifications: string[];
-  lesson_types: string[];
+  lesson_types: Array<{
+    title: string;
+    description: string;
+    duration: string;
+    price: number;
+  }>;
   highlights: string[];
   photos: string[];
+  gallery_photos?: string[];
   services: Array<{
     title: string;
     description: string;
@@ -282,15 +283,7 @@ export interface InstructorDTO {
 
 // Zod schema for validation
 export const ServiceSchema = z.object({
-  price: z.union([
-    z.string(),
-    z.number()
-  ]).transform(val => {
-    if (typeof val === 'string') {
-      return val.startsWith('$') ? val : `$${val}`;
-    }
-    return `$${val}`;
-  }),
+  price: z.number(),
   title: z.string().min(1),
   duration: z.string().transform(val => {
     const num = parseInt(val.replace(/[^0-9]/g, ''));
@@ -332,6 +325,7 @@ export const InstructorSchema = z.object({
   lesson_types: z.array(z.string()),
   highlights: z.array(z.string()),
   photos: z.array(z.string()),
+  gallery_photos: z.array(z.string()).optional(),
 
   // Complex Objects
   services: z.union([
