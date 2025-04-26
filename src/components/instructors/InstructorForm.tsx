@@ -14,6 +14,7 @@ import { SpecialtiesTab } from './form/SpecialtiesTab';
 import { PhotosTab } from './form/PhotosTab';
 import { Spinner } from '../ui/spinner';
 import { toast } from '@/hooks/use-toast';
+import { LocationDetailsTab } from './form/LocationDetailsTab';
 
 interface InstructorFormProps {
   onSubmit: (data: InstructorFormValues) => void;
@@ -42,7 +43,9 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
       email: '',
       phone: '',
       website: '',
-      experience: 0,
+      yearStarted: new Date().getFullYear(),
+      streetAddress: '',
+      suite: '',
       postalCode: '',
       country: '',
       state: '',
@@ -149,8 +152,12 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
   };
   
   const handleTabChange = (nextTab: string) => {
+    console.log('Changing tab to:', nextTab);
     if (validateTabChange(activeTab, nextTab)) {
       setActiveTab(nextTab);
+      console.log('Tab changed successfully to:', nextTab);
+    } else {
+      console.log('Tab change validation failed');
     }
   };
   
@@ -161,18 +168,20 @@ const InstructorForm: React.FC<InstructorFormProps> = ({
           <FormTabs activeTab={activeTab} onTabChange={handleTabChange}>
             <PersonalInfoTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
             <ProfessionalInfoTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
-            <LessonTypesTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
+            <LocationDetailsTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
             <SpecialtiesTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
             <PhotosTab 
               form={form} 
               activeTab={activeTab} 
               onTabChange={handleTabChange} 
               profilePhotoPreview={profilePhotoPreview}
+              setProfilePhotoPreview={setProfilePhotoPreview}
               additionalPhotos={additionalPhotos}
               handleProfilePhotoChange={handleProfilePhotoChange}
               handleAdditionalPhotosChange={handleAdditionalPhotosChange}
               removeAdditionalPhoto={removeAdditionalPhoto}
             />
+            <LessonTypesTab form={form} activeTab={activeTab} onTabChange={handleTabChange} />
           </FormTabs>
         </div>
         

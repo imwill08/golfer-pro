@@ -3,10 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from '@/components/ui/form';
 import { TabsContent } from '@/components/ui/tabs';
 import { UseFormReturn } from 'react-hook-form';
 import { InstructorFormValues } from '@/types/instructor';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ProfessionalInfoTabProps {
   form: UseFormReturn<InstructorFormValues>;
@@ -15,84 +22,42 @@ interface ProfessionalInfoTabProps {
 }
 
 export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, activeTab, onTabChange }) => {
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1949 }, (_, i) => currentYear - i);
+
   return (
     <TabsContent value="professional" className="space-y-6 mt-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="experience"
+          name="yearStarted"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Years of Experience <span className="text-red-500">*</span></FormLabel>
-              <FormControl>
-                <Input type="number" min="0" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} />
-              </FormControl>
+              <FormLabel>Year Started Coaching <span className="text-red-500">*</span></FormLabel>
+              <Select 
+                onValueChange={(value) => field.onChange(parseInt(value))}
+                defaultValue={field.value?.toString()}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select year" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription className="text-xs text-muted-foreground">
+                Select the year you started coaching
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        
-        {/* Enhanced location fields */}
-        <div className="col-span-1 md:col-span-2">
-          <h3 className="text-lg font-medium mb-3">Location Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="postalCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Postal Code <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="90210" {...field} className="bg-gray-50 text-gray-800" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="country"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Country <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="USA" {...field} className="bg-gray-50 text-gray-800" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="state"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State/Province <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="California" {...field} className="bg-gray-50 text-gray-800" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="city"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City or Locality <span className="text-red-500">*</span></FormLabel>
-                  <FormControl>
-                    <Input placeholder="Beverly Hills" {...field} className="bg-gray-50 text-gray-800" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
         
         <FormField
           control={form.control}
@@ -102,20 +67,6 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
               <FormLabel>Tagline (optional)</FormLabel>
               <FormControl>
                 <Input placeholder="Helping golfers master their swing" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="specialization"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Specialties <span className="text-red-500">*</span></FormLabel>
-              <FormControl>
-                <Input placeholder="Swing Analysis Specialist" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -166,14 +117,14 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
             control={form.control}
             name="certifications.pga"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">PGA Certified</FormLabel>
+                <FormLabel className="!m-0 pl-4">PGA Certified</FormLabel>
               </FormItem>
             )}
           />
@@ -182,14 +133,14 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
             control={form.control}
             name="certifications.lpga"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">LPGA Certified</FormLabel>
+                <FormLabel className="!m-0 pl-4">LPGA Certified</FormLabel>
               </FormItem>
             )}
           />
@@ -198,14 +149,14 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
             control={form.control}
             name="certifications.tpi"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">TPI Certified</FormLabel>
+                <FormLabel className="!m-0 pl-4">TPI Certified</FormLabel>
               </FormItem>
             )}
           />
@@ -214,14 +165,14 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
             control={form.control}
             name="certifications.other"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Other Certification</FormLabel>
+                <FormLabel className="!m-0 pl-4">Other Certification</FormLabel>
               </FormItem>
             )}
           />
@@ -247,8 +198,8 @@ export const ProfessionalInfoTab: React.FC<ProfessionalInfoTabProps> = ({ form, 
         <Button type="button" variant="outline" onClick={() => onTabChange("personal")}>
           Previous: Personal Info
         </Button>
-        <Button type="button" onClick={() => onTabChange("lesson_types")}>
-          Next: Lesson Types
+        <Button type="button" onClick={() => onTabChange("location")}>
+          Next: Location Details
         </Button>
       </div>
     </TabsContent>

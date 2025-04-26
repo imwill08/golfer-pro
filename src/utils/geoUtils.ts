@@ -205,9 +205,9 @@ export const calculateDistance = (p1: Coordinates, p2: Coordinates): number => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   console.log('   c:', c.toFixed(6));
 
-  const R = 6371;
+  const R = 3958.8; // Earth's radius in miles
   const dist = R * c;
-  console.log('   distance:', dist.toFixed(2), 'km');
+  console.log('   distance:', dist.toFixed(2), 'miles');
   console.groupEnd();
 
   return dist;
@@ -219,15 +219,15 @@ export const calculateDistance = (p1: Coordinates, p2: Coordinates): number => {
 const isWithinBoundingBox = (
   point: Coordinates,
   center: Coordinates,
-  radiusKm: number
+  radiusMiles: number
 ): boolean => {
   const lat = typeof point.latitude === 'string' ? parseFloat(point.latitude) : point.latitude;
   const lon = typeof point.longitude === 'string' ? parseFloat(point.longitude) : point.longitude;
   const centerLat = typeof center.latitude === 'string' ? parseFloat(center.latitude) : center.latitude;
   const centerLon = typeof center.longitude === 'string' ? parseFloat(center.longitude) : center.longitude;
 
-  const dLat = radiusKm / 111; // ~km per degree latitude
-  const dLon = radiusKm / (111 * Math.cos(toRad(centerLat)));
+  const dLat = radiusMiles / 69; // ~miles per degree latitude
+  const dLon = radiusMiles / (69 * Math.cos(toRad(centerLat)));
 
   const withinBox = 
     Math.abs(lat - centerLat) <= dLat &&
@@ -250,12 +250,12 @@ const isWithinBoundingBox = (
 export const filterByDistance = <T extends LocationEntity>(
   entities: T[],
   centerCoordinates: Coordinates,
-  maxDistanceKm: number
+  maxDistanceMiles: number
 ): T[] => {
   console.log('Starting distance filtering:', {
     totalEntities: entities.length,
     centerCoordinates,
-    maxDistanceKm
+    maxDistanceMiles
   });
 
   const filtered = entities.filter(entity => {
@@ -271,19 +271,19 @@ export const filterByDistance = <T extends LocationEntity>(
     };
 
     // First check bounding box
-    if (!isWithinBoundingBox(entityCoords, centerCoordinates, maxDistanceKm)) {
+    if (!isWithinBoundingBox(entityCoords, centerCoordinates, maxDistanceMiles)) {
       console.log(`Instructor ${entity.id}: SKIPPED - outside bounding box`);
       return false;
     }
 
     // Calculate precise distance
     const distance = calculateDistance(centerCoordinates, entityCoords);
-    const isWithinRange = distance <= maxDistanceKm;
+    const isWithinRange = distance <= maxDistanceMiles;
 
     console.log(`Instructor ${entity.id}:`, {
       coordinates: [entity.latitude, entity.longitude],
-      distance: distance.toFixed(2) + ' km',
-      maxDistance: maxDistanceKm + ' km',
+      distance: distance.toFixed(2) + ' miles',
+      maxDistance: maxDistanceMiles + ' miles',
       withinRange: isWithinRange
     });
 

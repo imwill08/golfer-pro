@@ -84,7 +84,9 @@ export interface InstructorFormValues {
   website?: string;
   
   // Professional Information
-  experience: number;
+  yearStarted: number;
+  streetAddress: string;
+  suite?: string;
   postalCode: string;
   country: string;
   state: string;
@@ -111,7 +113,8 @@ export interface InstructorFormValues {
     title: string;
     description: string;
     duration: string;
-    price: number;
+    price: number | null;
+    contactForPrice?: boolean;
   }>;
   
   // Specialties

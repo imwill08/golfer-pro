@@ -7,6 +7,7 @@ import { getCoordinatesFromZip, calculateDistance } from '@/utils/geoUtils';
 import { supabase } from '@/integrations/supabase/client';
 import SearchResults from './SearchResults';
 import './HeroBanner.css';
+import { useNavigate } from 'react-router-dom';
 
 interface Instructor {
   id: string;
@@ -22,12 +23,17 @@ interface Instructor {
   postal_code: string;
   hourly_rate: number;
   certifications: string[];
-  lesson_types: string[];
+  lesson_types: Array<{
+    price: number;
+    title: string;
+    duration: string;
+    description: string;
+  }>;
 }
 
 const HeroBanner = () => {
   const [showRadiusPopup, setShowRadiusPopup] = useState(false);
-  const [radius, setRadius] = useState('25');
+  const [radius, setRadius] = useState('');
   const [zipCode, setZipCode] = useState('');
   const [country, setCountry] = useState('USA');
   const [isSearching, setIsSearching] = useState(false);
@@ -44,6 +50,17 @@ const HeroBanner = () => {
 
   // Add ref for search results section
   const searchResultsRef = useRef<HTMLDivElement>(null);
+
+  const radiusOptions = ['5', '10', '25', '50', '100', '250'];
+
+  const navigate = useNavigate();
+
+  const categories = [
+    "Online Lessons",
+    "Group Sessions",
+    "Group Clinics",
+    "Driving Ranges"
+  ];
 
   // Fetch instructors on component mount
   useEffect(() => {
@@ -237,6 +254,10 @@ const HeroBanner = () => {
     }
   };
 
+  const handleCategoryClick = (category: string) => {
+    navigate('/instructors', { state: { category } });
+  };
+
   return (
     <>
       <header className="hero-container mb-4" role="banner"> 
@@ -288,16 +309,18 @@ const HeroBanner = () => {
             {/* Country Section */}
             <div className="search-section">
               <label htmlFor="country" className="sr-only">Country</label>
-              <Input 
+              <select
                 id="country"
-                type="text" 
-                placeholder="Country" 
-                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-2"
+                className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-2 bg-transparent text-base outline-none"
                 aria-label="Select country"
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
                 onKeyPress={handleKeyPress}
-              />
+                style={{ width: '100%' }}
+              >
+                <option value="USA">USA</option>
+                <option value="Canada">Canada</option>
+              </select>
             </div>
             
             <div className="search-divider" role="separator" />
@@ -314,7 +337,7 @@ const HeroBanner = () => {
                 type="button"
               >
                 <span className={radius ? 'selected-value' : ''}>
-                  {radius ? `${radius}km` : 'Radius'}
+                  {radius ? `${radius} miles` : 'Radius'}
                 </span>
                 <ChevronDown 
                   className={`w-5 h-5 transform transition-transform ${showRadiusPopup ? 'rotate-180' : ''}`}
@@ -336,44 +359,20 @@ const HeroBanner = () => {
                     role="dialog"
                     aria-label="Select search radius"
                   >
-                    <div className="mobile-radius-header">
-                      <span className="mobile-radius-title">Select Search Radius</span>
-                      <button 
-                        className="mobile-radius-close"
-                        onClick={() => setShowRadiusPopup(false)}
-                        aria-label="Close radius selector"
-                        type="button"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <line x1="18" y1="6" x2="6" y2="18"></line>
-                          <line x1="6" y1="6" x2="18" y2="18"></line>
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="radius-slider-container">
-                      <div className="radius-value-display" aria-live="polite">
-                        {radius} kilometers
-                      </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max="100"
-                        value={radius || '25'}
-                        onChange={handleSliderChange}
-                        className="radius-slider"
-                        style={{
-                          background: `linear-gradient(to right, #2563eb 0%, #2563eb ${(parseInt(radius) - 1)}%, #e5e7eb ${(parseInt(radius) - 1)}%, #e5e7eb 100%)`
-                        }}
-                        aria-label="Search radius in kilometers"
-                        aria-valuemin={1}
-                        aria-valuemax={100}
-                        aria-valuenow={parseInt(radius)}
-                        aria-valuetext={`${radius} kilometers`}
-                      />
-                      <div className="radius-labels" aria-hidden="true">
-                        <span>1km</span>
-                        <span>100km</span>
-                      </div>
+                    <div className="radius-options-container">
+                      {radiusOptions.map((option) => (
+                        <button
+                          key={option}
+                          className={`radius-option ${radius === option ? 'selected' : ''}`}
+                          onClick={() => {
+                            setRadius(option);
+                            setShowRadiusPopup(false);
+                          }}
+                        >
+                          <span className="option-value">{option}</span>
+                          <span className="option-label">miles</span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </>
@@ -393,10 +392,25 @@ const HeroBanner = () => {
             </button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-gray-500">
-            <p>Find professional golf instructors offering private lessons, group classes, and specialized training.</p>
+          {/* Category Pills */}
+          <div className="category-pills-container mt-6">
+            <div className="flex flex-wrap justify-center gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => handleCategoryClick(category)}
+                  className="category-pill"
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
+
+        <div className="mt-4 text-center text-sm text-gray-500">
+          <p>Find professional golf instructors offering private lessons, group classes, and specialized training.</p>
+        </div>
       </header>
 
       {/* Search Results Section */}

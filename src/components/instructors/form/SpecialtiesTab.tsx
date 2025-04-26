@@ -38,7 +38,7 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
   return (
     <TabsContent value="specialties" className="space-y-6 mt-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Specialties <span className="text-red-500">*</span></h3>
+        <h3 className="text-lg font-medium">Specialties</h3>
         <p className="text-sm text-gray-500">Select all areas where you have specialized expertise.</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -46,14 +46,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.shortGame"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2"> 
+              <FormItem className="flex items-center "> 
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Short Game</FormLabel>
+                <FormLabel className="!m-0 pl-4">Short Game</FormLabel>
               </FormItem>
             )}
           />
@@ -62,14 +62,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.putting"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center ">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Putting</FormLabel>
+                <FormLabel className="!m-0 pl-4">Putting</FormLabel>
               </FormItem>
             )}
           />
@@ -78,14 +78,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.driving"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center ">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Driving</FormLabel>
+                <FormLabel className="!m-0 pl-4">Driving</FormLabel>
               </FormItem>
             )}
           />
@@ -94,14 +94,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.courseStrategy"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center ">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Course Strategy</FormLabel>
+                <FormLabel className="!m-0 pl-4">Course Strategy</FormLabel>
               </FormItem>
             )}
           />
@@ -110,14 +110,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.mentalApproach"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center ">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Mental Approach</FormLabel>
+                <FormLabel className="!m-0 pl-4">Mental Approach</FormLabel>
               </FormItem>
             )}
           />
@@ -126,14 +126,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.beginnerLessons"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center ">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Beginner Lessons</FormLabel>
+                <FormLabel className="!m-0 pl-4">Beginner Lessons</FormLabel>
               </FormItem>
             )}
           />
@@ -142,14 +142,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.advancedTraining"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center ">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Advanced Training</FormLabel>
+                <FormLabel className="!m-0 pl-4">Advanced Training</FormLabel>
               </FormItem>
             )}
           />
@@ -158,14 +158,14 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
             control={form.control}
             name="specialties.juniorCoaching"
             render={({ field }) => (
-              <FormItem className="flex items-center space-x-2">
+              <FormItem className="flex items-center">
                 <FormControl>
                   <Checkbox 
                     checked={field.value} 
                     onCheckedChange={field.onChange} 
                   />
                 </FormControl>
-                <FormLabel className="!m-0">Junior Coaching</FormLabel>
+                <FormLabel className="!m-0 pl-4">Junior Coaching</FormLabel>
               </FormItem>
             )}
           />
@@ -207,7 +207,7 @@ export const SpecialtiesTab: React.FC<SpecialtiesTabProps> = ({ form, activeTab,
           </div>
         </Card>
       </div>
-      
+       
       <div className="flex justify-between mt-8">
         <Button type="button" variant="outline" onClick={() => onTabChange("lesson_types")}>
           Previous: Lesson Types

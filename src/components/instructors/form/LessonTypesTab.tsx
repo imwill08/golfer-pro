@@ -9,6 +9,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { InstructorFormValues } from '@/types/instructor';
 import { X, Plus, ArrowRight } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface LessonTypesTabProps {
   form: UseFormReturn<InstructorFormValues>;
@@ -23,9 +24,10 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
   const [newDescription, setNewDescription] = useState('');
   const [newDuration, setNewDuration] = useState('');
   const [newPrice, setNewPrice] = useState('');
+  const [contactForPrice, setContactForPrice] = useState(false);
 
   const addLessonType = () => {
-    if (!newTitle.trim() || !newDescription.trim() || !newDuration.trim() || !newPrice.trim()) {
+    if (!newTitle.trim() || !newDescription.trim() || (!contactForPrice && !newPrice.trim())) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields for the lesson type.",
@@ -45,25 +47,25 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
       return;
     }
 
-    // Format the title to include duration and price
-    const formattedTitle = `${newTitle.trim()} (${newDuration.trim()} - $${newPrice.trim()})`;
+    let priceDisplay = contactForPrice ? 'Contact for price' : `$${newPrice.trim()}`;
+    const formattedTitle = `${newTitle.trim()}${newDuration.trim() ? ` (${newDuration.trim()}` : ''}${newDuration.trim() ? ' - ' : ' ('}${priceDisplay})`;
 
-    // Ensure lesson_types is always an array
     form.setValue('lesson_types', [
       ...(Array.isArray(currentLessonTypes) ? currentLessonTypes : []),
       {
         title: formattedTitle,
         description: newDescription.trim(),
         duration: newDuration.trim(),
-        price: Number(newPrice.replace(/[^0-9.]/g, '')) || 0
+        price: contactForPrice ? null : (Number(newPrice.replace(/[^0-9.]/g, '')) || 0),
+        contactForPrice: contactForPrice
       }
     ]);
 
-    // Clear the form
     setNewTitle('');
     setNewDescription('');
     setNewDuration('');
     setNewPrice('');
+    setContactForPrice(false);
 
     toast({
       title: "Lesson Type Added",
@@ -74,7 +76,6 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
   const removeLessonType = (index: number) => {
     const currentLessonTypes = form.getValues('lesson_types') || [];
     
-    // Ensure we're working with an array
     if (!Array.isArray(currentLessonTypes)) {
       form.setValue('lesson_types', []);
       return;
@@ -88,10 +89,9 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
   };
 
   const hasValidNewLesson = () => {
-    return newTitle.trim() && newDescription.trim() && newDuration.trim() && newPrice.trim();
+    return newTitle.trim() && newDescription.trim() && (contactForPrice || newPrice.trim());
   };
 
-  // Ensure lesson_types is always an array
   const existingLessonTypes = Array.isArray(form.watch('lesson_types')) 
     ? form.watch('lesson_types') 
     : [];
@@ -108,7 +108,6 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
     onTabChange("specialties");
   };
 
-  // Initialize lesson_types as an empty array if it's not already set
   React.useEffect(() => {
     const currentLessonTypes = form.getValues('lesson_types');
     if (!Array.isArray(currentLessonTypes)) {
@@ -129,7 +128,6 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
           </div>
         </div>
 
-        {/* Add New Lesson Type Form */}
         {existingLessonTypes.length < MAX_LESSON_TYPES && (
           <Card>
             <CardContent className="pt-6">
@@ -147,7 +145,7 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
                   </FormItem>
 
                   <FormItem>
-                    <FormLabel>Duration <span className="text-red-500">*</span></FormLabel>
+                    <FormLabel>Duration</FormLabel>
                     <FormControl>
                       <Input 
                         value={newDuration}
@@ -160,13 +158,27 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
                   <FormItem>
                     <FormLabel>Price <span className="text-red-500">*</span></FormLabel>
                     <FormControl>
-                      <Input 
-                        value={newPrice}
-                        onChange={(e) => setNewPrice(e.target.value)}
-                        placeholder="e.g., 100"
-                        type="number"
-                        min="0"
-                      />
+                      <div className="flex flex-col gap-2">
+                        <Input 
+                          value={newPrice}
+                          onChange={(e) => setNewPrice(e.target.value)}
+                          placeholder="e.g., 100"
+                          type="number"
+                          min="0"
+                          disabled={contactForPrice}
+                        />
+                        <label className="flex items-center gap-2 text-sm mt-1">
+                          <Checkbox
+                            checked={contactForPrice}
+                            onCheckedChange={(checked) => {
+                              setContactForPrice(!!checked);
+                              if (checked) setNewPrice('');
+                            }}
+                            id="contact-for-price"
+                          />
+                          Contact for price
+                        </label>
+                      </div>
                     </FormControl>
                   </FormItem>
                 </div>
@@ -183,40 +195,22 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
                 </FormItem>
 
                 <div className="flex justify-end gap-4">
-                  {existingLessonTypes.length === 0 ? (
-                    <Button 
-                      type="button"
-                      onClick={() => {
-                        addLessonType();
-                        if (hasValidNewLesson()) {
-                          onTabChange("specialties");
-                        }
-                      }}
-                      disabled={!hasValidNewLesson()}
-                      className="w-full md:w-auto"
-                    >
-                      Submit and Continue
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  ) : (
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={addLessonType}
-                      disabled={!hasValidNewLesson()}
-                      className="w-full md:w-auto"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Add Another Lesson
-                    </Button>
-                  )}
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={addLessonType}
+                    disabled={!hasValidNewLesson()}
+                    className="w-full md:w-auto"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Another Lesson
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Existing Lesson Types List */}
         {existingLessonTypes.length > 0 && (
           <>
             <div className="space-y-4">
@@ -236,7 +230,7 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
                           </div>
                           <div>
                             <h4 className="font-medium">Price</h4>
-                            <p className="text-gray-600">${lessonType.price}</p>
+                            <p className="text-gray-600">{lessonType.contactForPrice ? 'Contact for price' : `$${lessonType.price}`}</p>
                           </div>
                         </div>
                         <div>
@@ -258,23 +252,14 @@ export const LessonTypesTab: React.FC<LessonTypesTabProps> = ({ form, activeTab,
               ))}
             </div>
 
-            {/* Navigation buttons when there are existing lessons */}
             <div className="flex justify-between mt-8">
-              <Button type="button" variant="outline" onClick={() => onTabChange("professional")}>
-                Previous: Professional Info
-              </Button>
-              <Button 
-                type="button"
-                onClick={handleNextTab}
-                disabled={!existingLessonTypes.length}
-              >
-                Next: Specialties & FAQs
+              <Button type="button" variant="outline" onClick={() => onTabChange("photos")}>
+                Previous: Photos
               </Button>
             </div>
           </>
         )}
 
-        {/* Empty State - only show when there are no lessons and no valid new lesson */}
         {existingLessonTypes.length === 0 && !hasValidNewLesson() && (
           <div className="text-center text-gray-500 mt-4">
             <p>Please add at least one lesson type to continue.</p>

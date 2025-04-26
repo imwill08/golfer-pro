@@ -1,4 +1,6 @@
-import { z } from 'zod';
+import * as z from 'zod';
+
+const currentYear = new Date().getFullYear();
 
 // Form validation schema
 export const formSchema = z.object({
@@ -10,6 +12,8 @@ export const formSchema = z.object({
   experience: z.number().min(0, "Experience must be a positive number"),
   
   // Location fields with validation
+  streetAddress: z.string().min(1, "Street address is required"),
+  suite: z.string().optional(),
   postalCode: z.string().min(1, "Postal code is required"),
   country: z.string().min(1, "Country is required"),
   state: z.string().min(1, "State is required"),
@@ -34,18 +38,25 @@ export const formSchema = z.object({
       title: z.string().min(1, "Title is required"),
       description: z.string().min(1, "Description is required"),
       duration: z.string().min(1, "Duration is required"),
-      price: z.number().min(0, "Price must be a positive number")
-    })
+      price: z.number().min(0, "Price must be a positive number").nullable(),
+      contactForPrice: z.boolean().optional(),
+    }).refine(
+      (val) => val.contactForPrice || (typeof val.price === 'number' && val.price >= 0),
+      {
+        message: "Specify a price or select 'Contact for price'",
+        path: ["price"]
+      }
+    )
   ).min(1, "At least one lesson type is required"),
   specialties: z.object({
-    shortGame: z.boolean(),
-    putting: z.boolean(),
-    driving: z.boolean(),
-    courseStrategy: z.boolean(),
-    mentalApproach: z.boolean(),
-    beginnerLessons: z.boolean(),
-    advancedTraining: z.boolean(),
-    juniorCoaching: z.boolean()
+    shortGame: z.boolean().default(false),
+    putting: z.boolean().default(false),
+    driving: z.boolean().default(false),
+    courseStrategy: z.boolean().default(false),
+    mentalApproach: z.boolean().default(false),
+    beginnerLessons: z.boolean().default(false),
+    advancedTraining: z.boolean().default(false),
+    juniorCoaching: z.boolean().default(false)
   }),
   faqs: z.array(
     z.object({
@@ -55,6 +66,12 @@ export const formSchema = z.object({
   ).default([]),
   photos: z.array(z.string()).optional(),
   gallery_photos: z.array(z.string()).optional(),
-  profilePhoto: z.any().nullable(),
-  additionalPhotos: z.any().nullable()
+  profilePhoto: z.any().optional(),
+  additionalPhotos: z.any().optional(),
+  
+  // Professional Information
+  yearStarted: z.number()
+    .min(1950, "Year must be 1950 or later")
+    .max(currentYear, `Year cannot be later than ${currentYear}`)
+    .int("Must be a whole number")
 });

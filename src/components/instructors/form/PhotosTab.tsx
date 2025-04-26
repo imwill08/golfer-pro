@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ interface PhotosTabProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   profilePhotoPreview: string | null;
+  setProfilePhotoPreview: (value: string | null) => void;
   additionalPhotos: string[];
   handleProfilePhotoChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleAdditionalPhotosChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -24,6 +25,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
   activeTab, 
   onTabChange, 
   profilePhotoPreview, 
+  setProfilePhotoPreview,
   additionalPhotos,
   handleProfilePhotoChange,
   handleAdditionalPhotosChange,
@@ -34,16 +36,61 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
   // Existing gallery photos from the database
   const existingGalleryPhotos = form.watch('gallery_photos') || [];
 
+  const [isProfileDragActive, setIsProfileDragActive] = useState(false);
+  const [isGalleryDragActive, setIsGalleryDragActive] = useState(false);
+
+  // Add a function to clear both form value and preview
+  const handleRemoveProfilePhoto = () => {
+    form.setValue('profilePhoto', null);
+    setProfilePhotoPreview(null);
+  };
+
+  // Drag and drop handlers for profile photo
+  const handleProfileDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsProfileDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const event = { target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleProfilePhotoChange(event);
+    }
+  };
+  const handleProfileDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsProfileDragActive(true);
+  };
+  const handleProfileDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsProfileDragActive(false);
+  };
+
+  // Drag and drop handlers for gallery photos
+  const handleGalleryDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsGalleryDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const event = { target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleAdditionalPhotosChange(event);
+    }
+  };
+  const handleGalleryDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsGalleryDragActive(true);
+  };
+  const handleGalleryDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsGalleryDragActive(false);
+  };
+
   return (
     <TabsContent value="photos" className="space-y-8 mt-6">
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="space-y-12">
         {/* Profile Photo Section */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-foreground">Profile Photo</h3>
               <p className="text-sm text-muted-foreground">
-                Upload a professional photo of yourself (saved to <code>photos</code> field)
+                Upload a professional photo of yourself
               </p>
             </div>
             {profilePhotoPreview && (
@@ -52,22 +99,28 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive/90"
-                onClick={() => form.setValue('profilePhoto', null)}
+                onClick={handleRemoveProfilePhoto}
               >
                 Remove
               </Button>
             )}
           </div>
 
-          <div className="relative group">
-            <div className={cn(
-              "aspect-square w-full max-w-md mx-auto border-2 border-dashed rounded-xl overflow-hidden transition-all duration-200",
-              "hover:border-primary/50 focus-within:border-primary/50",
-              (profilePhotoPreview || existingProfilePhoto) ? "border-muted" : "border-muted/50"
-            )}>
+          <div className="relative group ">
+            <div
+              className={cn(
+                "w-[220px] aspect-square border-2 border-dashed rounded-xl overflow-hidden transition-all duration-200",
+                "hover:border-primary/50 focus-within:border-primary/50",
+                (profilePhotoPreview || existingProfilePhoto) ? "border-muted" : "border-muted/50",
+                isProfileDragActive ? "border-primary bg-primary/10" : ""
+              )}
+              onDrop={handleProfileDrop}
+              onDragOver={handleProfileDragOver}
+              onDragLeave={handleProfileDragLeave}
+            >
               <label 
                 htmlFor="profile-photo"
-                className="block w-full h-full cursor-pointer"
+                className="block cursor-pointer"
               >
                 {profilePhotoPreview ? (
                   <img 
@@ -82,10 +135,11 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
                     className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                    <Upload className="w-10 h-10 mb-4 text-muted-foreground" />
-                    <p className="text-sm font-medium text-foreground mb-1">Click to upload</p>
-                    <p className="text-xs text-muted-foreground">or drag and drop</p>
+                  <div className="flex flex-col items-center justify-center  h-full text-center p-4">
+                    <div className="mb-10"> </div>
+                    <Upload className="w-8 h-8 mb-3 text-muted-foreground" />
+                    <p className="text-sm font-medium text-foreground mb-1">Upload Profile Photo</p>
+                    <p className="text-xs text-muted-foreground">Drag and drop or click to select</p>
                   </div>
                 )}
                 <Input
@@ -117,11 +171,11 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
         </section>
 
         {/* Gallery Photos Section */}
-        <section className="space-y-4">
+        <section className="space-y-4 max-w-4xl">
           <div>
             <h3 className="text-lg font-semibold text-foreground">Gallery Photos</h3>
             <p className="text-sm text-muted-foreground">
-              Upload photos of you teaching or in action (saved to <code>gallery_photos</code> field)
+              Upload photos of you teaching or in action
             </p>
           </div>
 
@@ -129,8 +183,13 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
             <div className={cn(
               "border-2 border-dashed rounded-xl p-6 transition-all duration-200",
               "hover:border-primary/50 focus-within:border-primary/50",
-              (additionalPhotos.length > 0 || existingGalleryPhotos.length > 0) ? "border-muted" : "border-muted/50"
-            )}>
+              (additionalPhotos.length > 0 || existingGalleryPhotos.length > 0) ? "border-muted" : "border-muted/50",
+              isGalleryDragActive ? "border-primary bg-primary/10" : ""
+            )}
+            onDrop={handleGalleryDrop}
+            onDragOver={handleGalleryDragOver}
+            onDragLeave={handleGalleryDragLeave}
+            >
               <Label 
                 htmlFor="gallery-photos" 
                 className="flex flex-col items-center justify-center cursor-pointer text-center"
@@ -160,7 +219,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
             {additionalPhotos.length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-medium mb-2">New photos to upload:</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {additionalPhotos.map((photo, index) => (
                     <div 
                       key={`new-${index}`} 
@@ -191,7 +250,7 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
             {existingGalleryPhotos.length > 0 && (
               <div className="mt-4">
                 <h4 className="text-sm font-medium mb-2">Existing gallery photos:</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                   {existingGalleryPhotos.map((photo, index) => (
                     <div 
                       key={`existing-${index}`} 
@@ -218,14 +277,14 @@ export const PhotosTab: React.FC<PhotosTabProps> = ({
           onClick={() => onTabChange("specialties")}
           className="order-2 sm:order-1"
         >
-          Previous: Specialties & FAQs
+          Previous: Specialties
         </Button>
         <Button 
           type="button" 
-          onClick={() => onTabChange("personal")}
+          onClick={() => onTabChange("lesson_types")}
           className="order-1 sm:order-2"
         >
-          Next: Personal Info
+          Next: Lesson Types
         </Button>
       </div>
     </TabsContent>

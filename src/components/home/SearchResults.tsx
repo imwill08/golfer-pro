@@ -151,7 +151,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                   <Badge variant="secondary" className="mt-1 text-xs px-2 py-0">Exact Match</Badge>
                 ) : (
                   <Badge variant="outline" className="mt-1 text-xs px-2 py-0">
-                    {Math.round(instructor.distance * 10) / 10}km away
+                    {Math.round(instructor.distance * 0.621371 * 10) / 10} miles away
                   </Badge>
                 )}
               </CardTitle>

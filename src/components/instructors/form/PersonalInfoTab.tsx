@@ -29,7 +29,7 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ form, activeTa
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="lastName"
@@ -43,7 +43,7 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ form, activeTa
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="email"
@@ -57,7 +57,7 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ form, activeTa
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="phone"
@@ -71,7 +71,7 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ form, activeTa
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="website"
@@ -85,19 +85,33 @@ export const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({ form, activeTa
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="website"
+          render={({ field }) => (
+            <FormItem className="md:col-span-2">
+              <FormLabel className="text-sm font-medium">Booking URL (optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="https://clients.uschedule.com/sfgolfpc/booking" {...field} className="w-full" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
-      
+
       <div className="flex flex-col md:flex-row justify-between gap-4 mt-8">
-        <Button 
-          type="button" 
-          variant="outline" 
+        <Button
+          type="button"
+          variant="outline"
           onClick={() => onTabChange("photos")}
           className="w-full md:w-auto order-2 md:order-1"
         >
           Previous: Photos
         </Button>
-        <Button 
-          type="button" 
+        <Button
+          type="button"
           onClick={() => onTabChange("professional")}
           className="w-full md:w-auto order-1 md:order-2"
         >

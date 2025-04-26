@@ -151,7 +151,7 @@ const FeaturedInstructors = () => {
                         <MapPin className="w-4 h-4 mr-2" />
                         <span>{instructor.location}</span>
                       </div>
-                      <div className="flex items-center justify-between mt-2 text-sm text-muted-foreground">
+                      {/* <div className="flex items-center justify-between mt-2 text-sm text-muted-foreground">
                         <div className="flex items-center">
                           <span className="mr-1">Views:</span>
                           <span>{instructor.profileViews}</span>
@@ -160,7 +160,7 @@ const FeaturedInstructors = () => {
                           <span className="mr-1">Clicks:</span>
                           <span>{instructor.contactClicks}</span>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </SwiperSlide>

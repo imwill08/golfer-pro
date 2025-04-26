@@ -11,7 +11,7 @@ export const FormTabs: React.FC<FormTabsProps> = ({ activeTab, onTabChange, chil
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <div className="w-full overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
-        <TabsList className="w-full inline-flex md:grid md:grid-cols-5 min-w-max md:min-w-0 border-b md:border-none">
+        <TabsList className="w-full inline-flex md:grid md:grid-cols-6 min-w-max md:min-w-0 border-b md:border-none">
           <TabsTrigger 
             value="personal" 
             className="min-w-[130px] md:min-w-0 px-4 py-2 text-sm"
@@ -25,22 +25,29 @@ export const FormTabs: React.FC<FormTabsProps> = ({ activeTab, onTabChange, chil
             Professional
           </TabsTrigger>
           <TabsTrigger 
-            value="lesson_types" 
+            value="location" 
             className="min-w-[130px] md:min-w-0 px-4 py-2 text-sm"
           >
-            Lesson Types
+            Location
           </TabsTrigger>
           <TabsTrigger 
             value="specialties" 
             className="min-w-[130px] md:min-w-0 px-4 py-2 text-sm"
           >
-            Specialties & FAQs
+            Specialties
           </TabsTrigger>
+         
           <TabsTrigger 
             value="photos" 
             className="min-w-[130px] md:min-w-0 px-4 py-2 text-sm"
           >
             Photos
+          </TabsTrigger>
+          <TabsTrigger 
+            value="lesson_types" 
+            className="min-w-[130px] md:min-w-0 px-4 py-2 text-sm"
+          >
+            Lesson
           </TabsTrigger>
         </TabsList>
       </div>

@@ -153,7 +153,6 @@ const processFAQs = (faqData: { customFaqs?: { question: string; answer: string;
 export const handleInstructorFormSubmit = async (formData: InstructorFormValues, isAdmin: boolean = false, existingInstructorId?: string): Promise<void> => {
   try {
     console.log('Validating form data:', formData);
-    
     // More detailed validation
     const requiredFields = {
       'First Name': formData.firstName,
@@ -164,24 +163,20 @@ export const handleInstructorFormSubmit = async (formData: InstructorFormValues,
       'State': formData.state,
       'City': formData.city,
       'Postal Code': formData.postalCode,
-      'Experience': formData.experience,
       'Specialization': formData.specialization,
       'Bio': formData.bio
     };
-
     const missingFields = Object.entries(requiredFields)
       .filter(([_, value]) => {
         if (typeof value === 'number') {
-          return value <= 0;
+          return false;
         }
         return !value || (typeof value === 'string' && value.trim() === '');
       })
       .map(([field]) => field);
-
     if (missingFields.length > 0) {
       throw new Error(`Please fill in the following required fields: ${missingFields.join(', ')}`);
     }
-
     // Check if email already exists, but skip if admin is editing an existing instructor
     if (!isAdmin || !existingInstructorId) {
       const { data: existingInstructor, error: emailCheckError } = await supabase
@@ -189,70 +184,99 @@ export const handleInstructorFormSubmit = async (formData: InstructorFormValues,
         .select('id')
         .eq('email', formData.email)
         .single();
-
       if (emailCheckError && emailCheckError.code !== 'PGRST116') {
         throw emailCheckError;
       }
-
       if (existingInstructor) {
         throw new Error('An instructor with this email address already exists. Please use a different email address or contact support if you need to update your profile.');
       }
     } else {
-      // For admin edits, only check for duplicate email if it's different from the current instructor
       const { data: existingInstructor, error: emailCheckError } = await supabase
         .from('instructors')
         .select('id')
         .eq('email', formData.email)
         .neq('id', existingInstructorId)
         .single();
-
       if (emailCheckError && emailCheckError.code !== 'PGRST116') {
         throw emailCheckError;
       }
-
       if (existingInstructor) {
         throw new Error('This email address is already associated with another instructor. Please use a different email address.');
       }
     }
-
     // Validate lesson types
     const hasSelectedLessonType = Array.isArray(formData.lesson_types) ? 
       formData.lesson_types.length > 0 : 
       Object.values(formData.lesson_types).some(value => value);
-
     if (!hasSelectedLessonType) {
       throw new Error('Please select at least one lesson type');
     }
-
     // Validate specialties
     const hasSelectedSpecialty = Object.values(formData.specialties).some(value => value);
     if (!hasSelectedSpecialty) {
       throw new Error('Please select at least one specialty');
     }
-
     // Get coordinates for the address
-    const coordinates = await getCoordinates({
-      city: formData.city,
-      state: formData.state,
-      country: formData.country,
-      postalCode: formData.postalCode
-    });
-
+    let coordinates = null;
+    try {
+      coordinates = await getCoordinates({
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        postalCode: formData.postalCode
+      });
+    } catch (err) {
+      console.warn('Could not get coordinates:', err);
+    }
     // Generate a new UUID for the instructor
     const instructor_id = uuidv4();
-
-    // Handle photo uploads using the new processor
-    const { profilePhotos, galleryPhotos } = await processInstructorPhotos(formData);
-
+    // Handle photo uploads using the new processor (but allow missing photos)
+    let profilePhotos = [];
+    let galleryPhotos = [];
+    try {
+      const processed = await processInstructorPhotos(formData);
+      profilePhotos = processed.profilePhotos || [];
+      galleryPhotos = processed.galleryPhotos || [];
+    } catch (err) {
+      console.warn('Photo upload failed or skipped:', err);
+    }
     // Format location string
     const location = `${formData.city}, ${formData.state}, ${formData.country}`;
-
     // Transform form data with the new transformer
-    const transformedData = await transformInstructorFormData(formData, {
-      photos: profilePhotos,
-      gallery_photos: galleryPhotos
-    });
-
+    let transformedData = {};
+    try {
+      transformedData = await transformInstructorFormData(formData, {
+        photos: profilePhotos,
+        gallery_photos: galleryPhotos
+      });
+    } catch (err) {
+      console.warn('Data transformation failed, using raw form data:', err);
+      transformedData = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        website: formData.website,
+        location,
+        city: formData.city,
+        state: formData.state,
+        country: formData.country,
+        postal_code: formData.postalCode,
+        experience: formData.yearStarted,
+        tagline: formData.tagline,
+        specialization: formData.specialization,
+        bio: formData.bio,
+        additional_bio: formData.additionalBio,
+        specialties: formData.specialties,
+        certifications: formData.certifications,
+        lesson_types: formData.lesson_types,
+        faqs: formData.faqs,
+        photos: profilePhotos,
+        gallery_photos: galleryPhotos,
+        is_approved: false,
+        status: 'pending'
+      };
+    }
     // Add coordinates and other fields
     const instructorData = {
       id: instructor_id,
@@ -266,23 +290,18 @@ export const handleInstructorFormSubmit = async (formData: InstructorFormValues,
         website: formData.website || ''
       })
     };
-
     console.log('Instructor data to insert:', instructorData);
-
     // Insert instructor data
     const { data: insertedInstructor, error: instructorError } = await supabase
       .from('instructors')
       .insert(instructorData)
       .select()
       .single();
-
     if (instructorError) {
       console.error('Error inserting instructor:', instructorError);
       throw instructorError;
     }
-
     console.log('Inserted instructor:', insertedInstructor);
-
     // Create initial stats record
     const { error: statsError } = await supabase
       .from('instructor_stats')
@@ -291,28 +310,18 @@ export const handleInstructorFormSubmit = async (formData: InstructorFormValues,
         profile_views: 0,
         contact_clicks: 0
       });
-
     if (statsError) {
       console.error('Error creating stats record:', statsError);
       // Don't throw here as the main instructor record was created successfully
     }
-
-    // Show success message
     toast.success(
       'Application submitted successfully! Our admin team will review your application within 1-2 business days, and you will receive an email notification once reviewed.',
       {
         duration: 6000
       }
     );
-
-  } catch (error: any) {
-    console.error('Error submitting instructor form:', {
-      error,
-      message: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code
-    });
+  } catch (error) {
+    console.error('Error submitting instructor form:', error);
     throw error;
   }
 };
